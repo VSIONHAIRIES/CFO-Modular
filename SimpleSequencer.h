@@ -5,11 +5,13 @@
 // #include "synthesizer.h"
 #include "Teensy3DAC.h"
 #include "Amplifier.h"
-#include "OscillatorSAW.h"
+// #include "OscillatorSAW.h"
 #include "EnvelopeWithDivision.h"
 #include "MIDI.h"
 #include "Sequencer.h"
 #include "FilterLP6.h"
+#include "Mixer.h"
+#include "OscillatorWAVE.h"
 
 
 
@@ -18,8 +20,10 @@ IntervalTimer isrTimer;
 MIDI midi;
 EnvelopeWithDivision env1;
 EnvelopeWithDivision env2;
-OscillatorSAW saw1;
+OscillatorWAVE wave1;
+OscillatorWAVE wave2;
 Amplifier amp;
+Mixer mix;
 Sequencer seq;
 Teensy3DAC t3dac(48000);
 FilterLP6 fltr;
@@ -36,7 +40,9 @@ int lowSignal = SIGNED_BIT_32_LOW;
 void synth_isr() {
   env1.process();
   env2.process();
-	saw1.process();
+  wave1.process();
+  wave2.process();
+  mix.process();
   fltr.process();
 	amp.process();
 	t3dac.process();
@@ -62,9 +68,15 @@ void SimpleSequencer::start() {
 	env2.gateIn_ptr = &seq.gateOut;
 
   // saw1.frequencyIn_ptr = &midi.noteOut;
-  saw1.frequencyIn_ptr = &seq.noteOut;
+  wave1.frequencyIn_ptr = &seq.noteOut;
+  wave2.frequencyIn_ptr = &seq.noteOut;
 
-  fltr.audioIn_ptr = &saw1.audioOut;
+  mix.ch1audioIn_ptr = &wave1.audioOut;
+  mix.ch2audioIn_ptr = &wave2.audioOut;
+  mix.ch1gainIn_ptr = &halfSignal;
+  mix.ch2gainIn_ptr = &halfSignal;
+
+  fltr.audioIn_ptr = &mix.audioOut;
   fltr.cutoffIn_ptr = &fullSignal;
 	fltr.cutoffModSourceIn_ptr = &env2.envelopeOut;
 	fltr.cutoffModAmountIn_ptr = &fullSignal;

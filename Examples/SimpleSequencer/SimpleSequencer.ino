@@ -1,3 +1,4 @@
+#include <math.h>
 #include <SimpleSequencer.h>
 
 #define MIDI_CHANNEL 1
@@ -46,6 +47,7 @@ const int statusLed1 = 13;
 // BUTTONS //
 /////////////
 #define NUM_BUTTONS 3
+#define NUM_MACHINE_STATES ((int)(pow(2, NUM_BUTTONS)))
 const int debounceTime = 40;
 const int buttonPin [] = {11,12,2};
 int buttonIndex = 0;
@@ -55,6 +57,7 @@ int buttonState[] = {0, 0, 0};
 unsigned long buttonNow = 0;
 unsigned long buttonTime[] = {0, 0, 0};
 int machineState = 0;
+int lastMachineState = 0;
 
 //////////
 // KEYS //
@@ -70,6 +73,18 @@ int keyState[] = {0, 0, 0, 0, 0, 0, 0, 0};
 unsigned long keyNow = 0;
 unsigned long keyTime[] = {0, 0, 0, 0, 0, 0, 0, 0};
 int keys;
+
+////////////////////
+// POTENTIOMETERS //
+////////////////////
+
+#define NUM_POTS 2
+const int pots[NUM_POTS] = {A0, A1};
+const int pot_hysteresis = 16;
+int pot_values[NUM_POTS][NUM_MACHINE_STATES];
+int pot_hysteresis_center_value[NUM_POTS] = {0, 0};
+int pot_beyond_hysteresis[NUM_POTS] = {0, 0};
+int pot_lastMachineState[NUM_POTS] = {0, 0};
 
 
 void setup() {
@@ -97,10 +112,11 @@ void loop() {
   // midi.checkSerialMidi();
   readButtons();
   readKeys();
-  checkBPM();
+  // checkBPM();
+  updatePots();
   // cutoff = analogRead(A0) << 21;
-  cutoff = 32 << 24;
-	cutoffModAmount = analogRead(A1) << 21;
+  // cutoff = 32 << 24;
+	// cutoffModAmount = analogRead(A1) << 21;
 
   //  if(buttonChange || keyChange) {
     switch(machineState) {
@@ -204,7 +220,8 @@ void selectTrack() {
 void setupSequences() {
   for(int i = 0; i < NUM_TRACKS; i++) {
     for(int j = 0; j < NUM_STEPS; j++) {
-      notes[8*i + j] = j;
+      
+      // notes[8*i + j] = j;
     }
     track[i] = seq.newSequence(NOTE_16, 8, LOOP);
     Serial.print("Track created for sequence ");
@@ -213,7 +230,8 @@ void setupSequences() {
     Serial.println(i);
     seq.startSequence(track[i]);
     for(int j = 0; j < NUM_STEPS; j++) {
-      noteValues[j] = rootNote + scale[notes[8 * i + j]] + octave[8 * i + j] * 12;
+      // noteValues[j] = rootNote + scale[notes[8 * i + j]] + octave[8 * i + j] * 12;
+      noteValues[j] = rootNote;
     }
     seq.insertNotes(track[i], noteValues, 8, 0);
     seq.setInternal(track[i], true);

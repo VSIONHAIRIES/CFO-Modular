@@ -56,35 +56,108 @@ void readKeys() {
 //////////
 // POTS //
 //////////
-void checkBPM() {
-  int bpm = analogRead(A0)>>2;
-  if(bpm != _bpm) {
-    _bpm = bpm;
-    // Serial.print("BPM set to ");
-    // Serial.println(_bpm);
-    seq.setbpm(_bpm);
-    if(_bpm == 0) {
-      midi.setMidiIn(true);
-      midi.setMidiThru(true);
-      midi.setMidiOut(true);
-      midi.setMidiClockIn(true);
-      midi.setMidiClockThru(true);
-      midi.setMidiClockOut(true);
-      seq.setInternalClock(false);
+
+bool checkPot(int p, int ms) {
+  int read_value = analogRead(pots[p]);
+  if(pot_lastMachineState[p] == ms && pot_beyond_hysteresis[p] == ms) {
+    pot_values[p][ms] = read_value;
+    return true;
+  }
+  if(pot_lastMachineState[p] == ms) {
+    // get beyond hysteresis
+    int pdiff = read_value - pot_hysteresis_center_value[p];
+    if(pdiff < 0) pdiff *= -1;
+    if(pdiff > pot_hysteresis) {
+      pot_values[p][ms] = read_value;
+      pot_lastMachineState[p] = ms;
+      pot_beyond_hysteresis[p] = ms;
+      return true;
     } else {
-      midi.setMidiIn(false);
-      midi.setMidiThru(false);
-      midi.setMidiOut(false);
-      midi.setMidiClockIn(false);
-      midi.setMidiClockThru(false);
-      midi.setMidiClockOut(false);
-      seq.setInternalClock(true);
-//      Sequencer.sequencerContinue();
+      return false;
     }
+  } else {
+    // set hysteresis point
+    pot_hysteresis_center_value[p] = read_value;
+    pot_lastMachineState[p] = ms;
+    return false;
   }
 }
 
 
+void updatePots() {
+  switch(machineState) {
+    case 0:                 // NO BUTTONS
+      if(checkPot(0, machineState)) cutoff = pot_values[0][machineState] << 21;
+      if(checkPot(1, machineState)) cutoffModAmount = pot_values[1][machineState] << 21;
+      break;
+    case 1:                 // BUTTON 1
+      if(checkPot(0, machineState)) env2.setAttack(pot_values[0][machineState] >> 3);
+      if(checkPot(1, machineState)) {
+        env2.setDecay(pot_values[1][machineState] >> 3);
+        env2.setRelease(pot_values[1][machineState] >> 3);
+      }
+      break;
+    case 2:                 // BUTTON 2
+      if(checkPot(0, machineState)) wave2.setSemitone((pot_values[0][machineState] >> 4) - 32);
+      if(checkPot(1, machineState)) wave2.setDetune(pot_values[1][machineState] >> 2);
+      break;
+    case 3:                 // BUTTON 1 + 2
+      if(checkPot(0, machineState));
+      if(checkPot(1, machineState));
+      break;
+    case 4:                 // BUTTON 3
+      if(checkPot(0, machineState)) wave1.setWaveform(pot_values[0][machineState] >> 6);
+      if(checkPot(1, machineState)) wave2.setWaveform(pot_values[1][machineState] >> 6);
+      break;
+    case 5:                 // BUTTON 1 + 3
+      if(checkPot(0, machineState)) setBPM(pot_values[0][machineState] >> 2);
+      if(checkPot(1, machineState));
+      break;
+    case 6:                 // BUTTON 2 + 3
+      if(checkPot(0, machineState));
+      if(checkPot(1, machineState));
+      break;
+    case 7:                 // BUTTON 1 + 2 + 3
+      if(checkPot(0, machineState));
+      if(checkPot(1, machineState));
+      break;
+    default:
+      break;
+  }
+}
+
+
+void setBPM(uint8_t bpm) {
+// int bpm = analogRead(A0)>>2;
+// if(bpm != _bpm) {
+//   _bpm = bpm;
+  // Serial.print("BPM set to ");
+  // Serial.println(_bpm);
+  seq.setbpm(bpm);
+  if(bpm == 0) {
+    midi.setMidiIn(true);
+    midi.setMidiThru(true);
+    midi.setMidiOut(true);
+    midi.setMidiClockIn(true);
+    midi.setMidiClockThru(true);
+    midi.setMidiClockOut(true);
+    seq.setInternalClock(false);
+  } else {
+    midi.setMidiIn(false);
+    midi.setMidiThru(false);
+    midi.setMidiOut(false);
+    midi.setMidiClockIn(false);
+    midi.setMidiClockThru(false);
+    midi.setMidiClockOut(false);
+    seq.setInternalClock(true);
+//      Sequencer.sequencerContinue();
+  }
+}
+
+
+/////////////////////
+// OTHER FUNCTIONS //
+/////////////////////
 
 void initInterface() {
   pinMode(buttonPin[0], INPUT_PULLUP);
