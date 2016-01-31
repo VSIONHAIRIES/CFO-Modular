@@ -1,32 +1,28 @@
-#ifndef SIMPLE_SYNTH_H
-#define SIMPLE_SYNTH_H
+#ifndef SIMPLE_SEQUENCER_H
+#define SIMPLE_SEQUENCER_H
 
 #include <Arduino.h>
 // #include "synthesizer.h"
 #include "Teensy3DAC.h"
 #include "Amplifier.h"
 #include "OscillatorSAW.h"
-#include "FilterLP6.h"
 #include "EnvelopeWithDivision.h"
 #include "MIDI.h"
-#include "Mixer.h"
-#include "OscillatorWAVE.h"
+#include "Sequencer.h"
+#include "FilterLP6.h"
 
 
 
 IntervalTimer isrTimer;
 
 MIDI midi;
-Mixer mix;
 EnvelopeWithDivision env1;
 EnvelopeWithDivision env2;
-OscillatorWAVE wave1;
-OscillatorWAVE wave2;
-OscillatorSAW saw3;
-OscillatorSAW saw4;
-FilterLP6 fltr;
+OscillatorSAW saw1;
 Amplifier amp;
+Sequencer seq;
 Teensy3DAC t3dac(48000);
+FilterLP6 fltr;
 
 //int audio = 0;
 
@@ -38,68 +34,46 @@ int lowSignal = SIGNED_BIT_32_LOW;
 
 
 void synth_isr() {
-	env1.process();
-	env2.process();
-
-	wave1.process();
-	wave2.process();
-	// saw3.process();
-	// saw4.process();
-
-	mix.process();
-
-	fltr.process();
-
+  env1.process();
+  env2.process();
+	saw1.process();
+  fltr.process();
 	amp.process();
-
 	t3dac.process();
 }
 
 
 
-class SimpleSynth {
+class SimpleSequencer {
 
 public:
-	SimpleSynth() {}
-	~SimpleSynth() {}
+	SimpleSequencer() {}
+	~SimpleSequencer() {}
 
 	void start();
 
 };
 
 
-void SimpleSynth::start() {
+void SimpleSequencer::start() {
 
-	env1.gateIn_ptr = &midi.gateOut;
-	env2.gateIn_ptr = &midi.gateOut;
-	// env2.gateIn_ptr = &noSignal;
+  // env1.gateIn_ptr = &midi.gateOut;
+  env1.gateIn_ptr = &seq.gateOut;
+	env2.gateIn_ptr = &seq.gateOut;
 
-	wave1.frequencyIn_ptr = &midi.noteOut;
-	wave2.frequencyIn_ptr = &midi.noteOut;
-	// saw3.frequencyIn_ptr = &midi.noteOut;
-	// saw4.frequencyIn_ptr = &midi.noteOut;
+  // saw1.frequencyIn_ptr = &midi.noteOut;
+  saw1.frequencyIn_ptr = &seq.noteOut;
 
-	mix.ch1audioIn_ptr = &wave1.audioOut;
-	mix.ch2audioIn_ptr = &wave2.audioOut;
-	// mix.ch3audioIn_ptr = &saw3.audioOut;
-	// mix.ch4audioIn_ptr = &saw4.audioOut;
-	mix.ch1gainIn_ptr = &halfSignal;
-	mix.ch2gainIn_ptr = &halfSignal;
-	// mix.ch3gainIn_ptr = &noSignal;
-	// mix.ch4gainIn_ptr = &noSignal;
-
-	fltr.audioIn_ptr = &mix.audioOut;
-	fltr.cutoffIn_ptr = &fullSignal;
+  fltr.audioIn_ptr = &saw1.audioOut;
+  fltr.cutoffIn_ptr = &fullSignal;
 	fltr.cutoffModSourceIn_ptr = &env2.envelopeOut;
 	fltr.cutoffModAmountIn_ptr = &fullSignal;
 
-    amp.audioIn_ptr = &fltr.audioOut;
+  amp.audioIn_ptr = &fltr.audioOut;
 	amp.ampModSourceIn_ptr = &env1.envelopeOut;
 	// amp.ampModSourceIn_ptr = &fullSignal;
 	amp.ampModAmountIn_ptr = &fullSignal;
-	// amp.audioIn_ptr = &saw.audioOut;
 
-	// t3dac.audioIn_ptr = &fltr.audioOut;
 	t3dac.audioIn_ptr = &amp.audioOut;
 
 	analogWriteResolution(12);
@@ -399,4 +373,4 @@ void MIDI::controller(uint8_t channel, uint8_t number, uint8_t value) {
 }
 */
 
-#endif // SIMPLE_SYNTH_H
+#endif // SIMPLE_SEQUENCER_H

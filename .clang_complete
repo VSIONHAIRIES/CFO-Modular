@@ -1,0 +1,13 @@
+-IAmplifier/
+-IDAC/
+-IEnvelope/
+-IFilter/
+-IFramework/
+-IMIDI/
+-IMixer/
+-IOscillator/
+-ISynth/
+-I/Applications/Arduino.app/Contents/Java/hardware/teensy/avr/libraries/EEPROM/
+-I/Applications/Arduino.app/Contents/Java/hardware/teensy/avr/cores/teensy3/
+-I/Applications/Arduino.app/Contents/Java/hardware/teensy/avr/cores/teensy/
+-I/Applications/Arduino.app/Contents/Java/hardware/teensy/avr/libraries/

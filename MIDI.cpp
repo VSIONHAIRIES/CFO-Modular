@@ -13,14 +13,14 @@ MIDI::MIDI() {
     pinMode(1, OUTPUT);
     Serial.begin(115200);
     MIDI_SERIAL.begin(31250);
-    
+
     setMidiIn(true);
     setMidiOut(true);
     setMidiThru(true);
     setMidiClockIn(true);
     setMidiClockThru(true);
     setMidiClockOut(true);
-    
+
 	midiBufferIndex = 0;
 	midiChannel = 0;
     midiRead = false;
@@ -35,8 +35,56 @@ void MIDI::setChannel(uint8_t channel)
     else midiChannel = channel - 1;
 }
 
+
 uint8_t MIDI::getChannel() {
     return midiChannel;
+}
+
+
+void MIDI::process()
+{
+		for(int i=0; i < 4; i++) {
+			_noteOffIn[i] = *(noteOffIn_ptr + i);
+			_noteOnIn[i] = *(noteOnIn_ptr + i);
+			_controllerIn[i] = *(controllerIn_ptr + i);
+		}
+
+		if(_noteOffIn[0]) {
+			sendNoteOff(_noteOffIn[1],_noteOffIn[2],_noteOffIn[3]);
+			*noteOffIn_ptr = 0;	// should be pointing to first member of array
+		}
+
+		if(_noteOnIn[0]) {
+			sendNoteOn(_noteOnIn[1],_noteOnIn[2],_noteOnIn[3]);
+			*noteOnIn_ptr = 0;
+		}
+
+		if(_controllerIn[0]) {
+			sendController(_controllerIn[1],_controllerIn[2],_controllerIn[3]);
+			*controllerIn_ptr = 0;
+		}
+
+		_clockIn = *clockIn_ptr;
+		_startIn = *startIn_ptr;
+		_continueIn = *continueIn_ptr;
+		_stopIn = stopIn_ptr;
+
+		if(_clockIn) {
+			sendClock();
+			*clockIn_ptr = 0;
+		}
+		if(_startIn) {
+			sendStart();
+			*startIn_ptr = 0;
+		}
+		if(_continueIn) {
+			sendContinue();
+			*continueIn_ptr = 0;
+		}
+		if(_stopIn) {
+			sendStop();
+			*stopIn_ptr = 0;
+		}
 }
 
 
@@ -179,22 +227,22 @@ bool MIDI::getMidiClockThru()
 void MIDI::checkSerialMidi()
 {
     while(MIDI_SERIAL.available()) {
-        
+
 		data = MIDI_SERIAL.read();
-		
+
         if(data >= 0xF8) {
             midiRealTimeHandler(data);
 //            RealTimeSystem(byte(data));
             continue;
         }
-        
+
 //		if(data & 0x80 && (data & 0x0F) == midiChannel) {	// bitmask with 10000000 to see if byte is over 127 (data&0x80)
 //			midiBufferIndex = 0;							// and check if the midi channel corresponds to the midiChannel
 //			midiRead = true;								// the device is set to listen to.
 //		} else if(data & 0x80) {							// Else if the byte is over 127 (but not on the device's
 //			midiRead = false;								// midiChannel, don't read this or any following bytes.
 //		}
-		
+
         if(data >= 0x80 && data < 0xF0) {       // check if incoming byte is a status byte (above 127)but less than sysEx (0xF0)
             if((data & 0x0F) == midiChannel) {  // if it is, check if it is the right MIDI channel
                 midiBufferIndex = 0;
@@ -203,7 +251,7 @@ void MIDI::checkSerialMidi()
                 midiRead = false;
             } else {}                           // if it is below 128 just continue
         }
-        
+
         if(midiRead) {
 			midiBuffer[midiBufferIndex] = data;
 			midiBufferIndex++;
@@ -216,12 +264,12 @@ void MIDI::checkSerialMidi()
 //                Serial.println(midiBuffer[2], HEX);
 			}
 		}
-	}	
+	}
 }
 
 
 void MIDI::midiRealTimeHandler(uint8_t data) {
-    
+
     if(getMidiClockThru()) {
         MIDI_SERIAL.write(data);
     }
@@ -230,19 +278,19 @@ void MIDI::midiRealTimeHandler(uint8_t data) {
             case 0xF8:
                 clock();
                 break;
-                
+
             case 0xFA:
                 start();
                 break;
-                
+
             case 0xFB:
                 continues();
                 break;
-                
+
             case 0xFC:
                 stop();
                 break;
-                
+
             default:
                 break;
         }
@@ -253,24 +301,28 @@ void MIDI::midiRealTimeHandler(uint8_t data) {
 
 void MIDI::clock()
 {
+	clockOut = 1;
         // Sequencer.clock();
 }
 
 
 void MIDI::start()
 {
+	startOut = 1;
         // Sequencer.start();
 }
 
 
 void MIDI::continues()
 {
+	continueOut = 1;
         // Sequencer.continues();
 }
 
 
 void MIDI::stop()
 {
+	stopOut = 1;
         // Sequencer.stop();
 }
 
@@ -290,41 +342,41 @@ void MIDI::midiHandler() {
                                      midiBuffer[1] & 0x7F,   // note value 0-127
                                      midiBuffer[2] & 0x7F);  // note velocity 0-127
                     break;
-                    
+
                 case 0x90:
                     noteOn			(midiBuffer[0] & 0x0F,     // midi channel 0-15
                                      midiBuffer[1] & 0x7F,   // note value 0-127
                                      midiBuffer[2] & 0x7F);  // note velocity 0-127
                     break;
-                    
+
                 case 0xA0:
                     aftertouch		(midiBuffer[0] & 0x0F,   // midi channel 0-15
                                      midiBuffer[1] & 0x7F, // note value 0-127
                                      midiBuffer[2] & 0x7F);// note velocity 0-127
                     break;
-                    
+
                 case 0xB0:
                     controller		(midiBuffer[0] & 0x0F,   // midi channel 0-15
                                      midiBuffer[1] & 0x7F, // controller number 0-127
                                      midiBuffer[2] & 0x7F);// controller value 0-127
                     break;
-                    
+
                 case 0xC0:
                     programChange	(midiBuffer[0]  & 0x0F,    // midi channel 0-15
                                      midiBuffer[1] & 0x7F);  // program number 0-127
                     break;
-                    
+
                 case 0xD0:
                     channelPressure	(midiBuffer[0]  & 0x0F,    // midi channel 0-15
                                      midiBuffer[1] & 0x7F);  // pressure amount 0-127
                     break;
-                    
+
                 case 0xE0:
                     pitchWheel		(midiBuffer[0] & 0x0F,   // midi channel 0-15
                                      midiBuffer[1] & 0x7F, // higher bits 0-6
                                      midiBuffer[2] & 0x7F);// lower bits 7-13
                     break;
-                    
+
                 default:
                     break;
             }
@@ -360,17 +412,17 @@ void MIDI::noteOn(uint8_t channel, uint8_t note, uint8_t vel) {
 
 
 void MIDI::aftertouch(uint8_t channel, uint8_t note, uint8_t pressure) {
-	// Write code here for Aftertouch 
+	// Write code here for Aftertouch
 }
 
 
 void MIDI::controller(uint8_t channel, uint8_t number, uint8_t value) {
-	
+
 	if(value > 127) value = 127;
 	// instrument[number] = value;
-	
+
 	switch(number) {
-/*		
+/*
 		case IS_12_BIT:
 			if(value) Music.set12bit(true);
 			else Music.set12bit(false);
@@ -380,10 +432,10 @@ void MIDI::controller(uint8_t channel, uint8_t number, uint8_t value) {
 			break;
 		case CUTOFF:
 			Music.setCutoff(value * 512);
-			break;			
+			break;
 		case RESONANCE:
 			Music.setResonance(value * 512);
-			break;			
+			break;
 		case FILTER_TYPE:
 			Music.setFilterType(value);
 			break;
@@ -392,10 +444,10 @@ void MIDI::controller(uint8_t channel, uint8_t number, uint8_t value) {
 			break;
 		case CUTOFF_SOURCE:
 			Music.setCutoffModSource(value);
-			break;			
+			break;
 		case CUTOFF_SHAPE:
 			Music.setCutoffModShape(value);
-			break;			
+			break;
 		case ZERO_HZ_FM:
 			if(value) Music.fmToZeroHertz(true);
 			else Music.fmToZeroHertz(false);
@@ -436,7 +488,7 @@ void MIDI::controller(uint8_t channel, uint8_t number, uint8_t value) {
 			//Music.setDetune2(value/5120.0);
 			break;
 		case DETUNE3:
-			Music.setDetune3(map(value,0,127,-100,100)*0.0005946);							 
+			Music.setDetune3(map(value,0,127,-100,100)*0.0005946);
 			//Music.setDetune3((value-64.0)*0.0005946);
 			//Music.setDetune3(value/5120.0);
 			break;
@@ -445,14 +497,14 @@ void MIDI::controller(uint8_t channel, uint8_t number, uint8_t value) {
 //				int8_t val = (((value-16)/2)-24);
 //				Music.setSemitone1(val);
 //			} else if (value < 16) {
-//				Music.setSemitone1(-24);				
+//				Music.setSemitone1(-24);
 //			} else {
 //				Music.setSemitone1(24);
 //			}
 			if(40 <= value && value <= 88) {
 				Music.setSemitone1(value-64);
 			} else if (value < 40) {
-				Music.setSemitone1(-24);				
+				Music.setSemitone1(-24);
 			} else {
 				Music.setSemitone1(24);
 			}
@@ -462,14 +514,14 @@ void MIDI::controller(uint8_t channel, uint8_t number, uint8_t value) {
 //				int8_t val = (((value-16)/2)-24);
 //				Music.setSemitone2(val);
 //			} else if (value < 16) {
-//				Music.setSemitone2(-24);				
+//				Music.setSemitone2(-24);
 //			} else {
 //				Music.setSemitone2(24);
 //			}
 			if(40 <= value && value <= 88) {
 				Music.setSemitone2(value-64);
 			} else if (value < 40) {
-				Music.setSemitone2(-24);				
+				Music.setSemitone2(-24);
 			} else {
 				Music.setSemitone2(24);
 			}
@@ -479,14 +531,14 @@ void MIDI::controller(uint8_t channel, uint8_t number, uint8_t value) {
 //				int8_t val = (((value-16)/2)-24);
 //				Music.setSemitone3(val);
 //			} else if (value < 16) {
-//				Music.setSemitone3(-24);				
+//				Music.setSemitone3(-24);
 //			} else {
 //				Music.setSemitone3(24);
 //			}
 			if(40 <= value && value <= 88) {
 				Music.setSemitone3(value-64);
 			} else if (value < 40) {
-				Music.setSemitone3(-24);				
+				Music.setSemitone3(-24);
 			} else {
 				Music.setSemitone3(24);
 			}
@@ -602,10 +654,10 @@ void MIDI::controller(uint8_t channel, uint8_t number, uint8_t value) {
         case SEQ_SEQUENCE:
 //            Sequencer.setSelectedSequence(value);
             break;
-*/            
+*/
         default:
 			break;
-	} 
+	}
 }
 
 
@@ -615,11 +667,10 @@ void MIDI::programChange(uint8_t channel, uint8_t number) {
 
 
 void MIDI::channelPressure(uint8_t channel, uint8_t pressure) {
-	// Write code here for Channel Pressure 
+	// Write code here for Channel Pressure
 }
 
 
 void MIDI::pitchWheel(uint8_t channel, uint8_t highBits, uint8_t lowBits) {
 	// Write code here for Pitch Wheel
 }
-

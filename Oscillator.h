@@ -22,7 +22,7 @@ public:
 	void setDetune(int detune); // one semitone is 1024
 	void setBend(int bend);
 	void setPortamento(int port);
-	
+
 	void setFrequencyIn(int midinote); // set the frequency by MIDI note number 0-127
 	int getExpFrequencyFromMidinote(int indx);
 	int getExpFrequency(int indx);
@@ -43,7 +43,7 @@ protected:
 	int64_t		_lfoFrequency[256];
 
 
-	float 		_freq;
+	float 	_freq;
 	int 		_detune;
 	int			_semi;
 	int			_bend;

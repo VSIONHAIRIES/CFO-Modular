@@ -14,7 +14,7 @@ void setup() {
 	usbMIDI.setHandleNoteOff(OnNoteOff);
 	usbMIDI.setHandleNoteOn(OnNoteOn);
 	usbMIDI.setHandleControlChange(OnControlChange);
-	usbMIDI.setHandleRealTimeSystem(RealTimeSystem);	
+	usbMIDI.setHandleRealTimeSystem(RealTimeSystem);
 
 	synth.start();
 	// saw.frequencyIn_ptr = &frequency;
