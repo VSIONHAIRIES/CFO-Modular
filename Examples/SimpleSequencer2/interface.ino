@@ -4,6 +4,8 @@
 void readButtons() {
   // buttons are active low
   for(int i = 0; i < NUM_BUTTONS; i++) {
+//    int i = buttonIndex++;
+//    if(buttonIndex >= NUM_BUTTONS) buttonIndex = 0;
     buttonNow = millis();
     if((buttonNow - buttonTime[i]) > debounceTime) {
       buttonRead = digitalRead(buttonPin[i]);
@@ -15,6 +17,7 @@ void readButtons() {
       }
     }
   }
+  // Serial.println("Read Buttons");
 }
 
 
@@ -23,14 +26,18 @@ void readButtons() {
 //////////
 void readKeys() {
   for (int i = 0; i < NUM_KEYS; i++) {
+//    int i = keyIndex++;
+//    if(keyIndex >= NUM_KEYS) keyIndex = 0;
     keyNow = millis();
     if((keyNow - keyTime[i]) > debounceTime) {
       keyRead = analogRead(keyPin[i]);
+//      if(i==4) Serial.println(keyRead);
       if(keyRead > KEY_THRESHOLD) {
         keyValue = 1;
       } else {
         keyValue = 0;
       }
+//      keyValue = (keyRead > KEY_THRESHOLD) ? 1 : 0 ;
       if(keyValue != keyState[i]) {
         keyState[i] = keyValue;
         keyChange |= 1<<i;
@@ -121,6 +128,11 @@ void updatePots() {
 
 
 void setBPM(uint8_t bpm) {
+// int bpm = analogRead(A0)>>2;
+// if(bpm != _bpm) {
+//   _bpm = bpm;
+  // Serial.print("BPM set to ");
+  // Serial.println(_bpm);
   seq.setbpm(bpm);
   if(bpm == 0) {
     midi.setMidiIn(true);
@@ -143,106 +155,9 @@ void setBPM(uint8_t bpm) {
 }
 
 
-//////////
-// LEDS //
-//////////
-
-void updateLEDs() {
-
-  ledNow = millis();
-  int t = trackSelected;
-  int s = stepSelected;
-  int n = noteSelected;
-  leds = 0;
-  switch(machineState) {
-    case 0: // PLAY TRACK
-      leds |= (1 << trackPlaying);
-      if(trackChained >= 0) {
-        if((ledNow - ledTime) > ledPulse) {
-          chainedLedState ^= 1;
-          ledTime = ledNow;
-        }
-        leds |= (chainedLedState << trackChained);
-      }
-      break;
-    case 1: // SELECT STEP
-      leds = 0 | (1 << n);
-      leds = leds | (octave[s + 8*t] << 7);
-      // for(int i=0; i<NUM_STEPS; i++) {
-      //   leds |= (sample[t][s][i] << i);
-      // }
-      break;
-    case 2: // SELECT SAMPLE
-      leds |= (1 << s);
-      break;
-    case 3: // SELECT TRACK
-      // leds |= (1 << trackSelected);
-      break;
-    case 4: // SELECT TRACK
-      leds |= (1 << t);
-      break;
-    case 5: // CHAIN TRACKS PLAYING
-      leds |= (1 << trackPlaying);
-      if(trackChained >= 0) {
-        if((ledNow - ledTime) > ledPulse) {
-          chainedLedState ^= 1;
-          ledTime = ledNow;
-        }
-        leds |= (chainedLedState << trackChained);
-      }
-      break;
-    case 6: // COPY TRACK
-      leds |= (1 << t);
-      break;
-    case 7: // CLEAR TRACK
-      // for(int i=0; i<NUM_KEYS; i++) {
-      //   for(int j=0; j<NUM_SAMPLES; j++) {
-      //     for(int k=0; k<NUM_STEPS; k++) {
-      //       leds |= (sample[i][j][k] << i);
-      //     }
-      //   }
-      // }
-      break;
-    default:
-      break;
-  }
-  // indx = seq.getPosition(t);
-  for (int i = 0; i<8; i++) {
-    // leds ^= (1 << indx);
-    leds |= (1 << indx);
-    digitalWrite(seqLed[i], leds & (1 << i));
-  }
-}
-
-
 /////////////////////
 // OTHER FUNCTIONS //
 /////////////////////
-
-void updatePosition() {
-
-  indx = seq.getPosition(trackSelected);
-  if(indx != last_indx) {
-    // Serial.print("indx : ");
-    // Serial.println(indx);
-    if(indx >= NUM_STEPS-1) {
-      if(trackChained < 0);
-      else {
-        int t = trackPlaying;
-        trackPlaying = trackChained;
-        trackChained = t;
-        // Serial.print("trackPlaying : ");
-        // Serial.print(trackPlaying);
-        // Serial.print(" | trackChained : ");
-        // Serial.println(trackChained);
-        seq.setInternal(track[trackChained], false);
-        seq.setInternal(track[trackPlaying], true);
-      }
-    }
-    last_indx = indx;
-  }
-}
-
 
 void initInterface() {
   pinMode(buttonPin[0], INPUT_PULLUP);
@@ -253,6 +168,38 @@ void initInterface() {
     pinMode(seqLed[i], OUTPUT);
   }
   startupAnimation();
+}
+
+
+void updateLEDs() {
+    switch(machineState) {
+      case 0:
+        leds = 0 | (1 << trackPlaying);
+        break;
+      case 1:
+        leds = 0 | (1 << noteSelected);
+        leds = leds | (octave[stepSelected + 8 * trackSelected] << 7);
+        break;
+      case 2:
+        leds = 0 | (1 << stepSelected);
+        break;
+      case 3: // nothing
+        break;
+      case 4:
+        leds = 0 | (1 << trackSelected);
+        break;
+      case 5: // nothing
+        break;
+      case 6: // nothing
+        break;
+      case 7: // nothing
+        break;
+      default:
+        break;
+    }
+  for (int i = 0; i<8; i++) {
+    digitalWrite(seqLed[i], leds & (1 << i));
+  }
 }
 
 

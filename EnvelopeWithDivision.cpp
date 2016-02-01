@@ -9,7 +9,7 @@ EnvelopeWithDivision::EnvelopeWithDivision() : Envelope() {
 	_lastGateIn = 0;
 
 	setStage(0);
-	setAttack(4);
+	setAttack(12);
 	setDecay(64);
 	setSustain(127);
 	setRelease(48);
@@ -27,7 +27,7 @@ void EnvelopeWithDivision::process() {
 	// if(_lastGateIn > 0  && _gateIn > 0); // Continous HIGH: attack (stage 1), decay (stage 2) and sustain (stage 3). Wait for release
 	if(_lastGateIn > 0  && _gateIn < 0) _stage = 4; // transition from HIGH to LOW: Release (stage 4) begins
 	_lastGateIn = _gateIn;
-	
+
 	// Attack
 	if(_stage == 1) {
 		_env += 1; // to make sure the envelope increases when (MAX_ENV_GAIN-_env) is smaller than attack1
@@ -60,7 +60,7 @@ void EnvelopeWithDivision::process() {
 			_stage = 0;
 		}
 	}
-			 
+
 	// No gain
 	else if (_stage == 0) {
 		_env = 0;
@@ -105,7 +105,7 @@ void EnvelopeWithDivision::setDecay(uint8_t dec)
 
 void EnvelopeWithDivision::setSustain(uint8_t sus)
 {
-	_sustain = (sus * MAX_ENV_GAIN) >> 7;	
+	_sustain = (sus * MAX_ENV_GAIN) >> 7;
 }
 
 
@@ -118,11 +118,11 @@ void EnvelopeWithDivision::setRelease(uint8_t rel)
 
 void EnvelopeWithDivision::setVelSustain(uint8_t vel)
 {
-	_velSustain = (vel * _sustain) >> 7;	
+	_velSustain = (vel * _sustain) >> 7;
 }
 
 
 void EnvelopeWithDivision::setVelPeak(uint8_t vel)
 {
-	_velPeak = (vel * MAX_ENV_GAIN) >> 7;	
+	_velPeak = (vel * MAX_ENV_GAIN) >> 7;
 }

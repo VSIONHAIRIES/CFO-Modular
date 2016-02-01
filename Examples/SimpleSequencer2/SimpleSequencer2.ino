@@ -1,44 +1,44 @@
+#define MIDI_CHANNEL 1
 #include <math.h>
 #include <EEPROM.h>
 #include <SimpleSequencer.h>
 
-#define MIDI_CHANNEL 1
 #define NUM_TRACKS 8
 #define NUM_STEPS 8
-#define OCT_EEPROM_OFFSET (NUM_TRACKS * NUM_STEPS)
+// #define NUM_NOTES 8
 #define NUM_LEDS 8
 
-SimpleSequencer synth;
+// int track[8];
 
-int cutoffModAmount = 0;
-int cutoff = 0;
-
-int mode;
-
-int track[8];
-
-int _bpm;
-
-const int scale[] = {0, 2, 3, 5, 7, 8, 10, 12};
-//const int octave[] = {-24, -12, 0, 12, 24};
-int rootNote = 36;
+// int _bpm;
 
 int trackPlaying = 0;
 int trackSelected = 0;
 int stepSelected = 0;
 int noteSelected = 0;
 int trackChained = -1;
+
+// int notes[64];
+// int octave[64];
+// int noteValues[8];
+
+int8_t notes[NUM_TRACKS][NUM_STEPS];
+int8_t octaves[NUM_TRACKS][NUM_STEPS];
+int note;
 int oct = 0;
 
-int notes[64];
-int octave[64];
-int noteValues[8];
-int note; // is this needed?
+int s1;
+int indx = 0;
+
+bool inStartupMode = true;
+
+const int scale[] = {0, 2, 3, 5, 7, 8, 10, 12};
+//const int octave[] = {-24, -12, 0, 12, 24};
+int rootNote = 36;
 
 //int var = 0;
 //const int pot1 = A0, pot2 = A1;
 
-//boolean debug = true;
 
 //////////
 // LEDS //
@@ -46,24 +46,26 @@ int note; // is this needed?
 
 const int seqLed[] = {3,4,5,6,7,8,9,10};
 const int statusLed1 = 13;
-int indx;
-int last_indx = 0;
+int indxLED;
 int leds;
 int chainedLedState = 0;
 unsigned long ledNow;
 unsigned long ledTime = 0;
 unsigned long ledPulse = 100;
 
+//boolean debug = true;
+
 
 /////////////
 // BUTTONS //
 /////////////
 #define NUM_BUTTONS 3
-#define NUM_MACHINE_STATES ((int)(pow(2, NUM_BUTTONS)))
-unsigned long debounceTime = 40;
-unsigned long debounceTimeDefault = 40;
-unsigned long debounceTimeLong = 100;
+#define NUM_MACHINE_STATES (1 << NUM_BUTTONS)
+int mode;
 // const int debounceTime = 40;
+unsigned long debounceTime = 100;
+unsigned long debounceTimeDefault = 100;
+unsigned long debounceTimeLong = 500;
 const int buttonPin [] = {11,12,2};
 int buttonIndex = 0;
 int buttonRead = 0;
@@ -102,6 +104,11 @@ int pot_beyond_hysteresis[NUM_POTS] = {0, 0};
 int pot_lastMachineState[NUM_POTS] = {0, 0};
 
 
+// Synthesizer variables
+SimpleSequencer synth;
+int cutoffModAmount = 0;
+int cutoff = 0;
+
 void setup() {
 
   usbMIDI.setHandleNoteOff(OnNoteOff);
@@ -109,15 +116,21 @@ void setup() {
   usbMIDI.setHandleControlChange(OnControlChange);
   usbMIDI.setHandleRealTimeSystem(RealTimeSystem);
 
+  delay(2000);
+
   synth.start();
   fltr.cutoffIn_ptr = &cutoff;
 	fltr.cutoffModAmountIn_ptr = &cutoffModAmount;
 
-  // delay(2000);
   seq.init(120);
   seq.setInternalClock(true);
-  setupSequences();
+  s1 = seq.newSequence(NOTE_16, &s1cb);
+//  resetMemory();
+  // setupSequences();
+  loadSequences();
   initInterface();
+  Sequencer.startSequence(s1);
+
 }
 
 
@@ -127,9 +140,8 @@ void loop() {
   // midi.checkSerialMidi();
   readButtons();
   readKeys();
-  updatePosition();
+  // checkBPM();
   updatePots();
-
   switch(machineState) {
     case 0:
       playTrack();
@@ -146,9 +158,8 @@ void loop() {
       selectTrack();
       break;
     case 5: // nothing
-      chainTrack();
       break;
-    case 6:
+    case 6: 
       copyTrack();
       break;
     case 7:
@@ -160,14 +171,6 @@ void loop() {
   updateLEDs();
 }
 
-
-// void playTrack() {
-//   if(keyChange) {
-//     Serial.println("PLAY TRACK");
-//   // code here
-//   keyChange = 0;
-//   }
-// }
 
 void playTrack() {
   if(keyChange && keys) {
@@ -193,46 +196,59 @@ void selectNote() {
   if(keyChange) {
     for(int i = 0; i < NUM_KEYS-1; i++) {
       if(keys & (1 << i)) noteSelected = i;
-      notes[stepSelected + NUM_TRACKS * trackSelected] = noteSelected;
-      EEPROM.write(stepSelected + trackSelected * NUM_TRACKS, noteSelected);
+      notes[stepSelected + 8 * trackSelected] = noteSelected;
     }
     if(keys & (1 << 7)) {
       oct ^= 1;
-      octave[stepSelected + NUM_TRACKS * trackSelected] = oct;
-      EEPROM.write(stepSelected + trackSelected * NUM_TRACKS + OCT_EEPROM_OFFSET, oct);
+      octave[stepSelected + 8 * trackSelected] = oct;
     }
-    // for(int i = 0; i < NUM_STEPS; i++) {
-    //   noteValues[i] = rootNote + scale[notes[8 * trackSelected + i]] + octave[i + 8 * trackSelected] * 12;
-    //   seq.insertNotes(track[trackSelected], noteValues, 8, 0);
-    // }
-    noteValues[0] = rootNote + scale[notes[stepSelected + 8 * trackSelected]]
-                             + octave[stepSelected + 8 * trackSelected] * 12;
-    seq.insertNotes(track[trackSelected], noteValues, 1, stepSelected);
+    for(int i = 0; i < NUM_STEPS; i++) {
+      noteValues[i] = rootNote + scale[notes[8 * trackSelected + i]] + octave[i + 8 * trackSelected] * 12;
+      seq.insertNotes(track[trackSelected], noteValues, 8, 0);
+    }
     keyChange = 0;
   }
 }
 
+
 void selectStep() {
   if(keyChange) {
     Serial.println("SELECT STEP");
-    for(int i = 0; i < NUM_KEYS; i++) {
-  // code here
-      if(keys & (1 << i)) {
-        stepSelected = i;
-        Serial.print("Step selected: ");
-        Serial.println(stepSelected);
+    for(int k = 0; k < NUM_KEYS; k++) {
+      if(keys & (1 << k)) {
+        stepSelected = k;
+        // int j = sampleSelected;
+        // int i = trackSelected;
+        // sample[i][j][k] ^= 1;
+        // EEPROM.write(k + NUM_SAMPLES * (j + i * NUM_TRACKS), sample[i][j][k]);
       }
     }
     keyChange = 0;
   }
 }
 
+
+// void selectStep() {
+//   if(keyChange) {
+//     Serial.println("SELECT STEP");
+//     for(int i = 0; i < NUM_KEYS; i++) {
+//   // code here
+//       if(keys & (1 << i)) {
+//         stepSelected = i;
+//         Serial.print("Step selected: ");
+//         Serial.println(stepSelected);
+//       }
+//     }
+//     keyChange = 0;
+//   }
+// }
+
 void selectTrack() {
   if(keyChange) {
     Serial.println("SELECT TRACK");
-    for(int i = 0; i < NUM_KEYS; i++) {
-      if(keys & (1 << i)) {
-        trackSelected = i;
+    for(int k = 0; k < NUM_KEYS; k++) {
+      if(keys & (1 << k)) {
+        trackSelected = k;
       }
     }
     keyChange = 0;
@@ -243,14 +259,10 @@ void selectTrack() {
 void chainTrack() {
   if(keyChange) {
     Serial.println("SELECT TRACK");
-    for(int i = 0; i < NUM_KEYS; i++) {
-      if(keys & (1 << i)) {
-        if(i == trackChained) trackChained = -1;
-        else trackChained = i;
-        Serial.print("trackPlaying : ");
-        Serial.print(trackPlaying);
-        Serial.print(" | trackChained : ");
-        Serial.println(trackPlaying);
+    for(int k = 0; k < NUM_KEYS; k++) {
+      if(keys & (1 << k)) {
+        if(k == trackChained) trackChained = -1;
+        else trackChained = k;
       }
     }
     keyChange = 0;
@@ -265,16 +277,11 @@ void copyTrack() {
     for(int i = 0; i < NUM_KEYS; i++) {
       if(keys & (1 << i)) {
         for(int j=0; j<NUM_STEPS; j++) {
-          notes[8*i + j] = notes[8*trackSelected + j];
-          octave[8*i + j] = octave[8*trackSelected + j];
-          noteValues[j] = rootNote + scale[notes[8*trackSelected + j]]
-                                   + octave[8*trackSelected + j] * 12;
-          EEPROM.write(j + i * NUM_TRACKS, notes[8*i + j]);
-          EEPROM.write(j + i * NUM_TRACKS + OCT_EEPROM_OFFSET, octave[8*i + j]);
+          sample[i][j] = sample[trackSelected][j];
+          EEPROM.write(j + i * NUM_TRACKS, sample[i][j]);
         }
-        trackSelected = i;
-        seq.insertNotes(track[trackSelected], noteValues, 8, stepSelected);
       }
+      trackSelected = i;
     }
     keyChange = 0;
     debounceTime = debounceTimeDefault;
@@ -288,12 +295,8 @@ void clearTrack() {
     for(int i = 0; i < NUM_KEYS; i++) {
       if(keys & (1 << i)) {
         for(int j=0; j<NUM_STEPS; j++) {
-          notes[8*i + j] = 0;
-          octave[8*i + j] = 0;
-          noteValues[0] = 0;
-          seq.insertNotes(track[trackSelected], noteValues, 1, stepSelected);
+          sample[i][j] = 0;
           EEPROM.write(j + i * NUM_TRACKS, 0);
-          EEPROM.write(j + i * NUM_TRACKS + OCT_EEPROM_OFFSET, 0);
         }
       }
     }
@@ -302,11 +305,46 @@ void clearTrack() {
 }
 
 
+void resetMemory() {
+  for(int i=0; i<NUM_TRACKS; i++) {
+    for(int j=0; j<NUM_STEPS; j++) {
+      EEPROM.write(j + i * NUM_TRACKS, 0);
+    }
+  }
+}
+
+
+void loadSequences() {
+  for(int i=0; i<NUM_TRACKS; i++) {
+    for(int j=0; j<NUM_STEPS; j++) {
+      notes[i][j] = EEPROM.read(j + i * NUM_TRACKS);
+    }
+  }
+}
+
+void s1cb() {
+  indxLED = indx;
+  for(int i=0; i<NUM_STEPS; i++) {
+    if(sample[trackPlaying][i][indx]) Music.noteOnSample(i);
+  }
+  indx++;
+  if(indx >= NUM_STEPS) {
+    indx = 0;
+    if(trackChained < 0);
+    else {
+      int t = trackPlaying;
+      trackPlaying = trackChained;
+      trackChained = t;
+    }
+  }
+}
+
+
+
 void setupSequences() {
   for(int i = 0; i < NUM_TRACKS; i++) {
     for(int j = 0; j < NUM_STEPS; j++) {
-      notes[8*i + j] = EEPROM.read(i * NUM_TRACKS + j);
-      octave[8*i + j] = EEPROM.read(i * NUM_TRACKS + j + OCT_EEPROM_OFFSET);
+
       // notes[8*i + j] = j;
     }
     track[i] = seq.newSequence(NOTE_16, 8, LOOP);
@@ -316,9 +354,8 @@ void setupSequences() {
     Serial.println(i);
     seq.startSequence(track[i]);
     for(int j = 0; j < NUM_STEPS; j++) {
-      noteValues[j] = rootNote + scale[notes[8 * i + j]] + octave[8 * i + j] * 12;
       // noteValues[j] = rootNote + scale[notes[8 * i + j]] + octave[8 * i + j] * 12;
-      // noteValues[j] = rootNote;
+      noteValues[j] = rootNote;
     }
     seq.insertNotes(track[i], noteValues, 8, 0);
     seq.setInternal(track[i], false);

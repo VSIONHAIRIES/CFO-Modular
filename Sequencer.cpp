@@ -663,17 +663,8 @@ void seq::trigger(int *noteout_ptr, int *gateout_ptr) //, int *noteoffout_ptr, i
 
 void seq::triggerNoteOn(int *noteout_ptr, int *gateout_ptr) //, int *noteoffout_ptr, int *noteonout_ptr)
 {
+  
   if(_begin < 0 ) _begin = 0;
-
-  if(_internal) {
-    *noteout_ptr = _notes[_position] << 24;
-    *gateout_ptr = SIGNED_BIT_32_HIGH;
-  }
-  if(_external) {
-    // seq::trigger(int*, int*) function for comments on what to put here
-  }
-
-  _lastposition = _position;
 
   if(_reverse) {
     if(_position <= _begin) {
@@ -689,6 +680,17 @@ void seq::triggerNoteOn(int *noteout_ptr, int *gateout_ptr) //, int *noteoffout_
     // _lastposition = _position;
     _position++;
   }
+
+  if(_internal) {
+    *noteout_ptr = _notes[_position] << 24;
+    *gateout_ptr = SIGNED_BIT_32_HIGH;
+  }
+  if(_external) {
+    // see seq::trigger(int*, int*) function for comments on what to put here
+  }
+
+  _lastposition = _position;
+
 }
 
 
@@ -697,13 +699,13 @@ void seq::triggerNoteOff(int *noteout_ptr, int *gateout_ptr) //, int *noteoffout
   if(_begin < 0 ) _begin = 0;
 
   if(_internal) {
-    Serial.print("_position is: ");
-    Serial.println(_notes[_lastposition]);
+    // Serial.print("_position is: ");
+    // Serial.println(_notes[_lastposition]);
     *noteout_ptr = _notes[_lastposition] << 24;
     *gateout_ptr = SIGNED_BIT_32_LOW;
   }
   if(_external) {
-    // seq::trigger(int*, int*) function for comments on what to put here
+    // see seq::trigger(int*, int*) function for comments on what to put here
   }
 
   // _lastposition = _position;
