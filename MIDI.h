@@ -2,6 +2,7 @@
 #define MIDI_H
 
 #include "AudioNode.h"
+#include "Sequencer.h"
 
 // MIDI specific constants
 #define MIDI_SERIAL Serial1
@@ -20,6 +21,7 @@
 #define MIDI_CONTINUE 0xFB  // 251;
 #define MIDI_STOP 0xFC      // 252;
 
+typedef void (*midiClock_cb)(void);
 
 
 class MIDI : public AudioNode {
@@ -33,12 +35,12 @@ public:
 	// void init();
 	void checkSerialMidi();
 
-    void setChannel(uint8_t channel);
-    uint8_t getChannel();
-    uint8_t midiChannel;
+  void setChannel(uint8_t channel);
+  uint8_t getChannel();
+  uint8_t midiChannel;
 
 	void midiHandler();
-    void midiRealTimeHandler(uint8_t data);
+  void midiRealTimeHandler(uint8_t data);
 
 	void noteOff(uint8_t channel, uint8_t note, uint8_t vel);
 	void noteOn(uint8_t channel, uint8_t note, uint8_t vel);
@@ -48,53 +50,58 @@ public:
 	void channelPressure(uint8_t channel, uint8_t pressure);
 	void pitchWheel(uint8_t channel, uint8_t highBits, uint8_t lowBits);
 	void pitchChange(uint8_t channel, int pitch); // extra pitchWheel function for USB MIDI interfacing
-    void clock();
-    void stop();
-    void start();
-    void continues();
+	void clock();
+	void stop();
+	void start();
+	void continues();
 
-    void sendNoteOff(uint8_t channel, uint8_t note);
-    void sendNoteOff(uint8_t channel, uint8_t note, uint8_t vel);
-    void sendNoteOn(uint8_t channel, uint8_t note, uint8_t vel);
-    void sendController(uint8_t channel, uint8_t number, uint8_t value);
+	void attachMidiClockCallbackClock(midiClock_cb cbClock);
+	void attachMidiClockCallbackStart(midiClock_cb cbStart);
+	void attachMidiClockCallbackStop(midiClock_cb cbStop);
+	void attachMidiClockCallbackContinue(midiClock_cb cbContinue);
 
-    void sendClock();
-    void sendStart();
-    void sendContinue();
-    void sendStop();
+	void sendNoteOff(uint8_t channel, uint8_t note);
+	void sendNoteOff(uint8_t channel, uint8_t note, uint8_t vel);
+	void sendNoteOn(uint8_t channel, uint8_t note, uint8_t vel);
+	void sendController(uint8_t channel, uint8_t number, uint8_t value);
 
-    void setMidiIn(bool i);
-    bool getMidiIn();
+	void sendClock();
+	void sendStart();
+	void sendContinue();
+	void sendStop();
 
-    void setMidiOut(bool o);
-    bool getMidiOut();
+	void setMidiIn(bool i);
+	bool getMidiIn();
 
-    void setMidiThru(bool t);
-    bool getMidiThru();
+	void setMidiOut(bool o);
+	bool getMidiOut();
 
-    void setMidiClockIn(bool i);
-    bool getMidiClockIn();
+	void setMidiThru(bool t);
+	bool getMidiThru();
 
-    void setMidiClockOut(bool o);
-    bool getMidiClockOut();
+	void setMidiClockIn(bool i);
+	bool getMidiClockIn();
 
-    void setMidiClockThru(bool t);
-    bool getMidiClockThru();
+	void setMidiClockOut(bool o);
+	bool getMidiClockOut();
 
-    int noteOut;
-    int gateOut;
+	void setMidiClockThru(bool t);
+	bool getMidiClockThru();
 
-		int* noteOffIn_ptr;
-		int* noteOnIn_ptr;
-		int* controllerIn_ptr;
-		bool* clockIn_ptr;
-	  bool* startIn_ptr;
-	  bool* continueIn_ptr;
-	  bool* stopIn_ptr;
-	  bool clockOut;
-	  bool startOut;
-	  bool continueOut;
-	  bool stopOut;
+	int noteOut;
+	int gateOut;
+
+	int* noteOffIn_ptr;
+	int* noteOnIn_ptr;
+	int* controllerIn_ptr;
+	bool* clockIn_ptr;
+	bool* startIn_ptr;
+	bool* continueIn_ptr;
+	bool* stopIn_ptr;
+	bool clockOut;
+	bool startOut;
+	bool continueOut;
+	bool stopOut;
 
 
 protected:
@@ -103,29 +110,35 @@ protected:
 	uint8_t data;
 	uint8_t midiBuffer[3];
 
-    bool midiIn;
-    bool midiOut;
-    bool midiThru;
-    bool midiClockIn;
-    bool midiClockOut;
-    bool midiClockThru;
+  bool midiIn;
+  bool midiOut;
+  bool midiThru;
+  bool midiClockIn;
+  bool midiClockOut;
+  bool midiClockThru;
 
 	int midiBufferIndex;
 	uint16_t frequency;
 	uint8_t notePlayed;
-    bool midiRead;
+  bool midiRead;
 //    int notesPlayed[16];
 //    int noteIndex;
 
     // int midiNoteToSignal[128];
 
-		int _noteOffIn[4];
-		int _noteOnIn[4];
-		int _controllerIn[4];
-		bool _clockIn;
-		bool _startIn;
-		bool _continueIn;
-		bool _stopIn;
+	int _noteOffIn[4];
+	int _noteOnIn[4];
+	int _controllerIn[4];
+	bool _clockIn;
+	bool _startIn;
+	bool _continueIn;
+	bool _stopIn;
+
+	// function pointers for passing MIDI Clock on to sequencer
+	midiClock_cb midiClockCB_clock;
+	midiClock_cb midiClockCB_start;
+	midiClock_cb midiClockCB_stop;
+	midiClock_cb midiClockCB_continue;
 
 
 };

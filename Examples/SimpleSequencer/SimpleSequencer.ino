@@ -104,19 +104,18 @@ int pot_lastMachineState[NUM_POTS] = {0, 0};
 
 void setup() {
 
-  usbMIDI.setHandleNoteOff(OnNoteOff);
-  usbMIDI.setHandleNoteOn(OnNoteOn);
-  usbMIDI.setHandleControlChange(OnControlChange);
-  usbMIDI.setHandleRealTimeSystem(RealTimeSystem);
-
   synth.start();
   fltr.cutoffIn_ptr = &cutoff;
 	fltr.cutoffModAmountIn_ptr = &cutoffModAmount;
+
+  wave1.setWaveform(SAW);
+  wave2.setWaveform(SAW);
 
   // delay(2000);
   seq.init(120);
   seq.setInternalClock(true);
   setupSequences();
+  setBPM(0);
   initInterface();
 }
 
@@ -124,7 +123,7 @@ void setup() {
 void loop() {
   seq.update();
   usbMIDI.read();
-  // midi.checkSerialMidi();
+  midi.checkSerialMidi();
   readButtons();
   readKeys();
   updatePosition();
@@ -188,12 +187,17 @@ void playTrack() {
 
 
 void selectNote() {
-  noteSelected = notes[stepSelected + 8 * trackSelected];
-  oct = octave[stepSelected + 8 * trackSelected];
+  noteSelected = notes[stepSelected + NUM_TRACKS * trackSelected];
+  oct = octave[stepSelected + NUM_TRACKS * trackSelected];
   if(keyChange) {
     for(int i = 0; i < NUM_KEYS-1; i++) {
-      if(keys & (1 << i)) noteSelected = i;
+      if(keys & (1 << i)) {
+        if(noteSelected == i) noteSelected = 255;
+        else noteSelected = i;
+      }
       notes[stepSelected + NUM_TRACKS * trackSelected] = noteSelected;
+      // Serial.print("noteSelected: ");
+      // Serial.println(notes[stepSelected + NUM_TRACKS * trackSelected]);
       EEPROM.write(stepSelected + trackSelected * NUM_TRACKS, noteSelected);
     }
     if(keys & (1 << 7)) {
@@ -205,8 +209,23 @@ void selectNote() {
     //   noteValues[i] = rootNote + scale[notes[8 * trackSelected + i]] + octave[i + 8 * trackSelected] * 12;
     //   seq.insertNotes(track[trackSelected], noteValues, 8, 0);
     // }
-    noteValues[0] = rootNote + scale[notes[stepSelected + 8 * trackSelected]]
-                             + octave[stepSelected + 8 * trackSelected] * 12;
+    // int note_position = scale[notes[stepSelected + NUM_TRACKS * trackSelected]];
+    // int note_octave = octave[stepSelected + NUM_TRACKS * trackSelected] * 12;
+    // noteValues[0] = rootNote + note_position + note_octave;
+    if(noteSelected == 255) {
+      noteValues[0] = 0;
+    } else {
+      noteValues[0] = rootNote + scale[notes[stepSelected + NUM_TRACKS * trackSelected]]
+                               + octave[stepSelected + NUM_TRACKS * trackSelected] * 12;
+    }
+    // Serial.print("Inserting note in sequencer: ");
+    // Serial.println(noteValues[0]);
+    // Serial.print("rootNote: ");
+    // Serial.println(rootNote);
+    // Serial.print("note_position: ");
+    // Serial.println(note_position);
+    // Serial.print("note_octave: ");
+    // Serial.println(note_octave);
     seq.insertNotes(track[trackSelected], noteValues, 1, stepSelected);
     keyChange = 0;
   }
@@ -305,8 +324,9 @@ void clearTrack() {
 void setupSequences() {
   for(int i = 0; i < NUM_TRACKS; i++) {
     for(int j = 0; j < NUM_STEPS; j++) {
-      notes[8*i + j] = EEPROM.read(i * NUM_TRACKS + j);
-      octave[8*i + j] = EEPROM.read(i * NUM_TRACKS + j + OCT_EEPROM_OFFSET);
+      notes[NUM_TRACKS*i + j] = EEPROM.read(i * NUM_TRACKS + j);
+      octave[NUM_TRACKS*i + j] = EEPROM.read(i * NUM_TRACKS + j + OCT_EEPROM_OFFSET);
+      if(octave[NUM_TRACKS*i + j] > 1) octave[NUM_TRACKS*i + j] = 1;
       // notes[8*i + j] = j;
     }
     track[i] = seq.newSequence(NOTE_16, 8, LOOP);
@@ -314,9 +334,16 @@ void setupSequences() {
     Serial.print(track[i]);
     Serial.print(" on position ");
     Serial.println(i);
-    seq.startSequence(track[i]);
+    // seq.startSequence(track[i]);
     for(int j = 0; j < NUM_STEPS; j++) {
-      noteValues[j] = rootNote + scale[notes[8 * i + j]] + octave[8 * i + j] * 12;
+      int note = notes[8 * i + j];
+      if(note == 255) {
+        noteValues[j] = 0;
+        Serial.println("ENCOUNTERED -1");
+      }
+      else {
+        noteValues[j] = rootNote + scale[notes[8 * i + j]] + octave[8 * i + j] * 12;
+      }
       // noteValues[j] = rootNote + scale[notes[8 * i + j]] + octave[8 * i + j] * 12;
       // noteValues[j] = rootNote;
     }

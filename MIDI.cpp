@@ -301,30 +301,56 @@ void MIDI::midiRealTimeHandler(uint8_t data) {
 
 void MIDI::clock()
 {
-	clockOut = 1;
-        // Sequencer.clock();
+	// clockOut = 1;
+  midiClockCB_clock();
 }
 
 
 void MIDI::start()
 {
-	startOut = 1;
-        // Sequencer.start();
-}
-
-
-void MIDI::continues()
-{
-	continueOut = 1;
-        // Sequencer.continues();
+	// startOut = 1;
+	midiClockCB_start();
 }
 
 
 void MIDI::stop()
 {
-	stopOut = 1;
-        // Sequencer.stop();
+	// stopOut = 1;
+	midiClockCB_stop();
 }
+
+
+void MIDI::continues()
+{
+	// continueOut = 1;
+	midiClockCB_continue();
+}
+
+
+void MIDI::attachMidiClockCallbackClock(midiClock_cb cbClock)
+{
+	Serial.println("MIDI RECEIVED CLOCKTICK");
+	midiClockCB_clock = cbClock;
+}
+
+
+void MIDI::attachMidiClockCallbackStart(midiClock_cb cbStart)
+{
+	 midiClockCB_start = cbStart;
+}
+
+
+void MIDI::attachMidiClockCallbackStop(midiClock_cb cbStop)
+{
+	midiClockCB_stop = cbStop;
+}
+
+
+void MIDI::attachMidiClockCallbackContinue(midiClock_cb cbContinue)
+{
+	midiClockCB_continue = cbContinue;
+}
+
 
 
 void MIDI::midiHandler() {

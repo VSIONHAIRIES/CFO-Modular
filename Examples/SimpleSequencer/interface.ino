@@ -104,7 +104,7 @@ void updatePots() {
       break;
     case 5:                 // BUTTON 1 + 3
       if(checkPot(0, machineState)) setBPM(pot_values[0][machineState] >> 2);
-      if(checkPot(1, machineState));
+      if(checkPot(1, machineState)) seq.setGatewidthAllSeqs(pot_values[1][machineState] >> 3);
       break;
     case 6:                 // BUTTON 2 + 3
       if(checkPot(0, machineState));
@@ -121,25 +121,26 @@ void updatePots() {
 
 
 void setBPM(uint8_t bpm) {
-  seq.setbpm(bpm);
   if(bpm == 0) {
     midi.setMidiIn(true);
     midi.setMidiThru(true);
-    midi.setMidiOut(true);
+    midi.setMidiOut(false);
     midi.setMidiClockIn(true);
     midi.setMidiClockThru(true);
-    midi.setMidiClockOut(true);
+    midi.setMidiClockOut(false);
     seq.setInternalClock(false);
   } else {
     midi.setMidiIn(false);
-    midi.setMidiThru(false);
+    midi.setMidiThru(true);
     midi.setMidiOut(false);
     midi.setMidiClockIn(false);
     midi.setMidiClockThru(false);
-    midi.setMidiClockOut(false);
+    midi.setMidiClockOut(true);
     seq.setInternalClock(true);
 //      Sequencer.sequencerContinue();
+    if(seq.getbpm() == 0) seq.start();
   }
+  seq.setbpm(bpm);
 }
 
 

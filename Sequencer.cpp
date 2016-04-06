@@ -7,69 +7,66 @@
 // Sequencer Sequencer;
 
 Sequencer::Sequencer() {
-  setbpm(120);
-  clockTick = 0;
-  for(int i = 0; i < MAX_SEQ; i++) {
-      _sequences[i] = NULL;
-  }
+    setbpm(120);
+    clockTick = 0;
+    for(int i = 0; i < MAX_SEQ; i++) {
+        _sequences[i] = NULL;
+    }
 }
 
 
 Sequencer::Sequencer(int bpm) {
-  setbpm(bpm);
-  clockTick = 0;
-  for(int i = 0; i < MAX_SEQ; i++) {
-      _sequences[i] = NULL;
-  }
+    setbpm(bpm);
+    clockTick = 0;
+    for(int i = 0; i < MAX_SEQ; i++) {
+        _sequences[i] = NULL;
+    }
 }
 
 
 void Sequencer::init(int bpm) {
-  setbpm(bpm);
-  clockTick = 0;
-  for(int i = 0; i < MAX_SEQ; i++) {
-      _sequences[i] = NULL;
-  }
+    setbpm(bpm);
+    clockTick = 0;
+    for(int i = 0; i < MAX_SEQ; i++) {
+        _sequences[i] = NULL;
+    }
 }
 
 
 void Sequencer::update()
 {
-  // Serial.println("Entering Sequencer Update function");
-  // Serial.print("getInternalClock() = ");
-  // Serial.println(getInternalClock());
-  if(getInternalClock()) {
-    internalClock();
-  }
+    if(getInternalClock()) {
+        internalClock();
+    }
 
-  for(int i = 0; i < MAX_SEQ; i++) {
-    seq* s = _sequences[i];
-    if(s == NULL || s->_stopped) continue;
-    if(clockTick >= s -> step) {
-      if(s -> _steps) {
-          //  Serial.println("_steps");
-          s -> triggerNoteOn(&noteOut, &gateOut); // NOTEON
-          //  Serial.println("triggerNoteOn");
-      } else {
-          s->_callback();
-          //  Serial.println("callback");
-      }
-      s->step += s -> _subdiv;
-      // Serial.println("s->step += s -> _subdiv");
-      // Serial.print("s->step is now ");
-      // Serial.println(s -> getcurrentstep());
+    for(int i = 0; i < MAX_SEQ; i++) {
+        seq* s = _sequences[i];
+        if(s == NULL || s->_stopped) continue;
+        if(clockTick >= s -> step) {
+            if(s -> _steps) {
+                //  Serial.println("_steps");
+                s -> triggerNoteOn(&noteOut, &gateOut); // NOTEON
+                //  Serial.println("triggerNoteOn");
+            } else {
+                s->_callback();
+                //  Serial.println("callback");
+            }
+            s->step += s -> _subdiv;
+            // Serial.println("s->step += s -> _subdiv");
+            // Serial.print("s->step is now ");
+            // Serial.println(s -> getcurrentstep());
+        }
+        if(clockTick == ((s -> step) - (s -> _subdiv) + (s -> _gatewidth))) {
+            if(s -> _steps) {
+                //  Serial.println("_steps");
+                s -> triggerNoteOff(&noteOut, &gateOut);  // NOTEOFF
+                //  Serial.println("triggerNoteOff");
+            } else {
+                // s->_callback(); // NEED A WAY TO SEND GATE_OFF CALLBACKS
+                //  Serial.println("callback");
+            }
+        }
     }
-    if(clockTick == ((s -> step) - (s -> _subdiv) + (s -> _gatewidth))) {
-      if(s -> _steps) {
-          //  Serial.println("_steps");
-          s -> triggerNoteOff(&noteOut, &gateOut);  // NOTEOFF
-          //  Serial.println("triggerNoteOff");
-      } else {
-          // s->_callback(); // NEED A WAY TO SEND GATE_OFF CALLBACKS
-          //  Serial.println("callback");
-      }
-    }
-  }
 }
 
 
@@ -77,6 +74,10 @@ void Sequencer::internalClock()
 {
     timeNow = micros();
     if(timeNow - lastTime >= tickTime) {
+        if(clockTick >= NOTE_1) {
+            start();
+            sendStart();
+        }
         clock();
         sendClock();
         lastTime = timeNow;
@@ -108,7 +109,7 @@ void Sequencer::start()
     for(int i = 0; i < MAX_SEQ; i++) {
         startSequence(i);
     }
-    sendStart();
+    // sendStart();
 }
 
 
@@ -118,7 +119,7 @@ void Sequencer::continues()
     for(int i = 0; i < MAX_SEQ; i++) {
         continueSequence(i);
     }
-    sendContinue();
+    // sendContinue();
 }
 
 
@@ -126,15 +127,60 @@ void Sequencer::stop()
 {
     for(int i = 0; i < MAX_SEQ; i++) {
         stopSequence(i);
+        seq* s = _sequences[i];
+        if(s == NULL) continue;
+        s -> triggerNoteOff(&noteOut, &gateOut);  // NOTEOFF
     }
-    sendStop();
+    // sendStop();
 }
 
 
-void Sequencer::sendClock() {}
-void Sequencer::sendStart() {}
-void Sequencer::sendContinue() {}
-void Sequencer::sendStop() {}
+void Sequencer::attachSequencerClockCallbackClock(sequencerClock_cb cbClock)
+{
+    sequencerClockCB_clock = cbClock;
+}
+
+
+void Sequencer::attachSequencerClockCallbackStart(sequencerClock_cb cbStart)
+{
+    sequencerClockCB_start = cbStart;
+}
+
+
+void Sequencer::attachSequencerClockCallbackStop(sequencerClock_cb cbStop)
+{
+    sequencerClockCB_stop = cbStop;
+}
+
+
+void Sequencer::attachSequencerClockCallbackContinue(sequencerClock_cb cbContinue)
+{
+    sequencerClockCB_continue = cbContinue;
+}
+
+
+void Sequencer::sendClock()
+{
+    sequencerClockCB_clock();
+}
+
+
+void Sequencer::sendStart()
+{
+    sequencerClockCB_start();
+}
+
+
+void Sequencer::sendContinue()
+{
+    sequencerClockCB_stop();
+}
+
+
+void Sequencer::sendStop()
+{
+    sequencerClockCB_continue();
+}
 
 
 int Sequencer::newSequence(SUBDIV subdiv, func_cb cb)
@@ -234,8 +280,16 @@ bool Sequencer::stopSequence(int index)
 bool Sequencer::startSequence(int index)
 {
     if(index >= 0 && index < MAX_SEQ && _sequences[index] != NULL) {
-        _sequences[index] -> _stopped = false;
+
+        bool reverse = _sequences[index] ->  _reverse;
+        if(reverse) {
+            _sequences[index] -> _position = _sequences[index] -> _begin;
+        } else {
+            _sequences[index] -> _position = _sequences[index] -> _end;
+        }
         _sequences[index] -> step = 0;
+        _sequences[index] -> _stopped = false;
+
         return true;
     }
     return false;
@@ -271,7 +325,7 @@ int Sequencer::getbpm()
 bool Sequencer::setChannel(int index, int channel)
 {
     if(index >= 0 && index < MAX_SEQ && _sequences[index] != NULL) {
-//        _sequences[index]->_channel;
+        //        _sequences[index]->_channel;
         _sequences[index]->setchannel(channel);
         return true;
     }
@@ -283,7 +337,7 @@ int Sequencer::getChannel(int index)
 {
     if(index >= 0 && index < MAX_SEQ && _sequences[index] != NULL) {
         return _sequences[index]->_channel;
-//        return _sequences[index]->getchannel();
+        //        return _sequences[index]->getchannel();
     }
     return -1;
 }
@@ -432,6 +486,15 @@ bool Sequencer::setSubdiv(int index, SUBDIV subdiv)
 }
 
 
+void Sequencer::setSubdivAllSeqs(SUBDIV subdiv) {
+    int index = 0;
+    while(index < MAX_SEQ && _sequences[index] != NULL) {
+        _sequences[index]->setsubdiv(subdiv);
+        index++;
+    }
+}
+
+
 int Sequencer::getSubdiv(int index)
 {
     if(index >= 0 && index < MAX_SEQ && _sequences[index] != NULL) {
@@ -498,6 +561,19 @@ int Sequencer::setSelectedSequence(int s)
     return selectedSequence;
 }
 
+
+void Sequencer::setGatewidth(int index, int gw) {
+    _sequences[index]->setgatewidth(gw);
+}
+
+
+void Sequencer::setGatewidthAllSeqs(int gw) {
+    int index = 0;
+    while(index < MAX_SEQ && _sequences[index] != NULL) {
+        _sequences[index]->setgatewidth(gw);
+        index++;
+    }
+}
 
 
 
@@ -597,133 +673,139 @@ seq::seq(int id, SUBDIV subdiv,  int steps, SEQ_LOOP_TYPE loop, bool reverse) : 
 
 void seq::trigger(int *noteout_ptr, int *gateout_ptr) //, int *noteoffout_ptr, int *noteonout_ptr)
 {
-  if(_begin < 0 ) {
-    // Serial.print("_begin is ");
-    // Serial.println(_begin);
-    _begin = 0;
-  }
-  //    Serial.print("_end is ");
-  //    Serial.println(_end);
-  //    Serial.print("_position is ");
-  //    Serial.println(_position);
-  //    Serial.println("enter trigger");
-
-  if(_internal) {
-    // Serial.println("enter conditional");
-    // Midi.noteOff(_channel, _notes[_lastposition], _velocity[_lastposition]);
-    // Serial.println("internal noteOff"); // NOT TRIGGERED IN THIS IMPLEMENTATION?
-
-    // Midi.noteOn(_channel, _notes[_position], _velocity[_position]);
-    // Serial.println("internal noteOff");
-    *noteout_ptr = _notes[_position] << 24;
-    *gateout_ptr = SIGNED_BIT_32_HIGH;
-  }
-  if(_external) {
-    // Midi.sendNoteOff(_channel, _notes[_lastposition], _velocity[_lastposition]);
-    // Serial.println("external noteOff");
-    // *noteoffout_ptr = 1;
-    // *(noteoffout_ptr + 1) = _channel;
-    // *(noteoffout_ptr + 2) = _notes[_lastposition];
-    // *(noteoffout_ptr + 3) = _velocity[_lastposition];
-
-    // Midi.sendNoteOn(_channel, _notes[_position], _velocity[_position]);
-    // Serial.println("external noteOff");
-    // *noteonout_ptr = 1;
-    // *(noteonout_ptr + 1) = _channel;
-    // *(noteonout_ptr + 2) = _notes[_position];
-    // *(noteonout_ptr + 3) = _velocity[_position];
-  }
-
-  _lastposition = _position;
-
-  if(_reverse) {
-    if(_position <= _begin) {
-      _position = _end + 1;
-      if(!_loop) _stopped = true;
+    if(_begin < 0 ) {
+        // Serial.print("_begin is ");
+        // Serial.println(_begin);
+        _begin = 0;
     }
-    _position--;
-  } else {
-    if(_position >= _end) {
-      _position = _begin - 1;
-      if(!_loop) _stopped = true;
+    //    Serial.print("_end is ");
+    //    Serial.println(_end);
+    //    Serial.print("_position is ");
+    //    Serial.println(_position);
+    //    Serial.println("enter trigger");
+
+    if(_internal) {
+        // Serial.println("enter conditional");
+        // Midi.noteOff(_channel, _notes[_lastposition], _velocity[_lastposition]);
+        // Serial.println("internal noteOff"); // NOT TRIGGERED IN THIS IMPLEMENTATION?
+
+        // Midi.noteOn(_channel, _notes[_position], _velocity[_position]);
+        // Serial.println("internal noteOff");
+        *noteout_ptr = _notes[_position] << 24;
+        *gateout_ptr = SIGNED_BIT_32_HIGH;
     }
+    if(_external) {
+        // Midi.sendNoteOff(_channel, _notes[_lastposition], _velocity[_lastposition]);
+        // Serial.println("external noteOff");
+        // *noteoffout_ptr = 1;
+        // *(noteoffout_ptr + 1) = _channel;
+        // *(noteoffout_ptr + 2) = _notes[_lastposition];
+        // *(noteoffout_ptr + 3) = _velocity[_lastposition];
+
+        // Midi.sendNoteOn(_channel, _notes[_position], _velocity[_position]);
+        // Serial.println("external noteOff");
+        // *noteonout_ptr = 1;
+        // *(noteonout_ptr + 1) = _channel;
+        // *(noteonout_ptr + 2) = _notes[_position];
+        // *(noteonout_ptr + 3) = _velocity[_position];
+    }
+
     _lastposition = _position;
-    //        Serial.print("_last position is ");
-    //        Serial.println(_lastposition);
-    //        Serial.println();
-    _position++;
-    //        Serial.print("_position is ");
-    //        Serial.println(_position);
-    //        Serial.println();
 
-  }
-  //    Serial.println("triggered");
+    if(_reverse) {
+        if(_position <= _begin) {
+            _position = _end + 1;
+            if(!_loop) _stopped = true;
+        }
+        _position--;
+    } else {
+        if(_position >= _end) {
+            _position = _begin - 1;
+            if(!_loop) _stopped = true;
+        }
+        _lastposition = _position;
+        //        Serial.print("_last position is ");
+        //        Serial.println(_lastposition);
+        //        Serial.println();
+        _position++;
+        //        Serial.print("_position is ");
+        //        Serial.println(_position);
+        //        Serial.println();
+
+    }
+    //    Serial.println("triggered");
 }
 
 
 void seq::triggerNoteOn(int *noteout_ptr, int *gateout_ptr) //, int *noteoffout_ptr, int *noteonout_ptr)
 {
-  
-  if(_begin < 0 ) _begin = 0;
 
-  if(_reverse) {
-    if(_position <= _begin) {
-      _position = _end + 1;
-      if(!_loop) _stopped = true;
+    if(_begin < 0 ) _begin = 0;
+
+    if(_reverse) {
+        if(_position <= _begin) {
+            _position = _end + 1;
+            if(!_loop) _stopped = true;
+        }
+        _position--;
+    } else {
+        if(_position >= _end) {
+            _position = _begin - 1;
+            if(!_loop) _stopped = true;
+        }
+        // _lastposition = _position;
+        _position++;
     }
-    _position--;
-  } else {
-    if(_position >= _end) {
-      _position = _begin - 1;
-      if(!_loop) _stopped = true;
+
+    if(_internal) {
+        int note = _notes[_position];
+        if(note) {
+            *noteout_ptr = note << 24;
+            *gateout_ptr = SIGNED_BIT_32_HIGH;
+        } else {
+            *gateout_ptr = SIGNED_BIT_32_LOW;
+        }
+        // *noteout_ptr = _notes[_position] << 24;
     }
-    // _lastposition = _position;
-    _position++;
-  }
+    if(_external) {
+        // see seq::trigger(int*, int*) function for comments on what to put here
+    }
 
-  if(_internal) {
-    *noteout_ptr = _notes[_position] << 24;
-    *gateout_ptr = SIGNED_BIT_32_HIGH;
-  }
-  if(_external) {
-    // see seq::trigger(int*, int*) function for comments on what to put here
-  }
-
-  _lastposition = _position;
+    _lastposition = _position;
 
 }
 
 
 void seq::triggerNoteOff(int *noteout_ptr, int *gateout_ptr) //, int *noteoffout_ptr, int *noteonout_ptr)
 {
-  if(_begin < 0 ) _begin = 0;
+    if(_begin < 0 ) _begin = 0;
 
-  if(_internal) {
-    // Serial.print("_position is: ");
-    // Serial.println(_notes[_lastposition]);
-    *noteout_ptr = _notes[_lastposition] << 24;
-    *gateout_ptr = SIGNED_BIT_32_LOW;
-  }
-  if(_external) {
-    // see seq::trigger(int*, int*) function for comments on what to put here
-  }
+    if(_internal) {
+        // Serial.print("_position is: ");
+        // Serial.println(_notes[_lastposition]);
+        *noteout_ptr = _notes[_lastposition] << 24;
+        *gateout_ptr = SIGNED_BIT_32_LOW;
+    }
+    if(_external) {
+        // see seq::trigger(int*, int*) function for comments on what to put here
+    }
 
-  // _lastposition = _position;
-  //
-  // if(_reverse) {
-  //   if(_position <= _begin) {
-  //     _position = _end + 1;
-  //     if(!_loop) _stopped = true;
-  //   }
-  //   _position--;
-  // } else {
-  //   if(_position >= _end) {
-  //     _position = _begin - 1;
-  //     if(!_loop) _stopped = true;
-  //   }
-  //   _lastposition = _position;
-  //   _position++;
-  // }
+    // _lastposition = _position;
+    //
+    // if(_reverse) {
+    //   if(_position <= _begin) {
+    //     _position = _end + 1;
+    //     if(!_loop) _stopped = true;
+    //   }
+    //   _position--;
+    // } else {
+    //   if(_position >= _end) {
+    //     _position = _begin - 1;
+    //     if(!_loop) _stopped = true;
+    //   }
+    //   _lastposition = _position;
+    //   _position++;
+    // }
 }
 
 
@@ -869,8 +951,8 @@ SUBDIV seq::getsubdiv()
 
 void seq::setgatewidth(int gw)
 {
-  if(gw < 0) gw = 0;
-  if(gw > 127) gw = 127;
+    if(gw < 0) gw = 0;
+    if(gw > 127) gw = 127;
     gw = (_subdiv * gw) >> 6;
     gw = (gw >> 1) + (gw & 1);
     _gatewidth = gw;

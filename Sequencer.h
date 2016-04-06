@@ -4,7 +4,7 @@
 #include "AudioNode.h"
 
 #define MAX_SEQ 8
-#define MAX_STEPS 16
+#define MAX_STEPS 8
 #define INSTR_SEQ 4
 #define ISEQ_NBR_STEPS 32
 
@@ -40,6 +40,8 @@ enum SEQ_LOOP_TYPE {
 
 #define REVERSE true
 
+typedef void (*sequencerClock_cb)(void);
+
 typedef void (*func_cb)(void);
 
 class seq;
@@ -54,6 +56,13 @@ class Sequencer : public AudioNode {
     void init(int bpm);
     void update();
     void internalClock();
+
+    void attachSequencerClockCallbackClock(sequencerClock_cb cbClock);
+  	void attachSequencerClockCallbackStart(sequencerClock_cb cbStart);
+  	void attachSequencerClockCallbackStop(sequencerClock_cb cbStop);
+  	void attachSequencerClockCallbackContinue(sequencerClock_cb cbContinue);
+
+
 
     void sendClock();
     void sendStart();
@@ -105,6 +114,7 @@ class Sequencer : public AudioNode {
     bool getExternal(int index);
 
     bool setSubdiv(int index, SUBDIV subdiv);
+    void setSubdivAllSeqs(SUBDIV subdiv);
     int getSubdiv(int index);
 
     bool setLoopType(int index, SEQ_LOOP_TYPE loop);
@@ -117,6 +127,9 @@ class Sequencer : public AudioNode {
 
     int setSelectedSequence(int s);
     // int getSelectedSequence();
+
+    void setGatewidth(int index, int gw);
+    void setGatewidthAllSeqs(int gw);
 
     // bool setSelectedPosition(int s);
     // int getSelectededPosition();
@@ -149,6 +162,13 @@ class Sequencer : public AudioNode {
 
     int selectedSequence;
     int selectedPosition;
+
+    // function pointers for passing MIDI Clock on to MIDI class
+    sequencerClock_cb sequencerClockCB_clock;
+    sequencerClock_cb sequencerClockCB_start;
+    sequencerClock_cb sequencerClockCB_stop;
+    sequencerClock_cb sequencerClockCB_continue;
+
 
     bool _clockIn;
     bool _startIn;
