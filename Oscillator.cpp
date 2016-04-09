@@ -54,7 +54,7 @@ Oscillator::Oscillator() : AudioNode() {
 
 void Oscillator::accumulator() {
 	_accumulator = _accumulator + _phase;
-	
+
 }
 
 
@@ -74,7 +74,7 @@ void inline Oscillator::setFrequency() {
 void Oscillator::setFrequencyIn(int midinote) {
 	if(midinote < 0) midinote = 0;
 	else if(midinote > 127) midinote = 127;
-	_frequencyIn = midinote << 24; 
+	_frequencyIn = midinote << 24;
 }
 
 
@@ -98,7 +98,7 @@ int Oscillator::getExpFrequency(int indx) {
 
 	if(_lfo) {
 		_freq0 = _lfoFrequency[_indx];
-		_freq1 = _lfoFrequency[_indx + 1];		
+		_freq1 = _lfoFrequency[_indx + 1];
 	} else {
 		_freq0 = _expFrequency[_indx];
 		_freq1 = _expFrequency[_indx + 1];
@@ -155,5 +155,4 @@ void Oscillator::setGain(float gain){
 
 float Oscillator::getGain() {
 	return float(_gain)/SIGNED_BIT_32_HIGH;
-}        
-
+}

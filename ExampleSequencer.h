@@ -1,5 +1,5 @@
-#ifndef SIMPLE_SEQUENCER_H
-#define SIMPLE_SEQUENCER_H
+#ifndef EXAMPLE_SEQUENCER_H
+#define EXAMPLE_SEQUENCER_H
 
 #include <Arduino.h>
 // #include "synthesizer.h"
@@ -9,9 +9,8 @@
 #include "EnvelopeWithDivision.h"
 #include "MIDI.h"
 #include "Sequencer.h"
-#include "FilterLP6.h"
 #include "Mixer.h"
-#include "OscillatorWAVE.h"
+#include "OscillatorSAW.h"
 #include "FilterMoog.h"
 
 IntervalTimer isrTimer;
@@ -22,12 +21,10 @@ Teensy3DAC t3dac(sample_rate);
 MIDI midi;
 EnvelopeWithDivision env1;
 EnvelopeWithDivision env2;
-OscillatorWAVE wave1;
-OscillatorWAVE wave2;
+OscillatorSAW saw;
+FilterMoog fltr;
 Amplifier amp;
-Mixer mix;
 Sequencer seq;
-FilterLP6 fltr;
 
 // Forward declaration of setupMidiAndSound function used at the bottom
 void setupMidiAndSound();
@@ -43,23 +40,21 @@ int lowSignal = SIGNED_BIT_32_LOW;
 void synth_isr() {
     env1.process();
     env2.process();
-    wave1.process();
-    wave2.process();
-    mix.process();
+    saw.process();
     fltr.process();
     amp.process();
     t3dac.process();
 }
 
 // Creating the class for this type of synth
-class SimpleSequencer {
+class ExampleSequencer {
 public:
-    SimpleSequencer() {}
-    ~SimpleSequencer() {}
+    ExampleSequencer() {}
+    ~ExampleSequencer() {}
     void start();
 };
 
-void SimpleSequencer::start() {
+void ExampleSequencer::start() {
 
     // Below hook up the various modules to each other
     // The order doesn't matter
@@ -69,15 +64,9 @@ void SimpleSequencer::start() {
     env2.gateIn_ptr = &seq.gateOut;
 
     // saw1.frequencyIn_ptr = &midi.noteOut;
-    wave1.frequencyIn_ptr = &seq.noteOut;
-    wave2.frequencyIn_ptr = &seq.noteOut;
+    saw.frequencyIn_ptr = &seq.noteOut;
 
-    mix.ch1audioIn_ptr = &wave1.audioOut;
-    mix.ch2audioIn_ptr = &wave2.audioOut;
-    mix.ch1gainIn_ptr = &halfSignal;
-    mix.ch2gainIn_ptr = &halfSignal;
-
-    fltr.audioIn_ptr = &mix.audioOut;
+    fltr.audioIn_ptr = &saw.audioOut;
     fltr.cutoffIn_ptr = &fullSignal;
     fltr.cutoffModSourceIn_ptr = &env2.envelopeOut;
     fltr.cutoffModAmountIn_ptr = &fullSignal;
@@ -425,4 +414,4 @@ break;
 }
 */
 
-#endif // SIMPLE_SEQUENCER_H
+#endif // EXAMPLE_SEQUENCER_H

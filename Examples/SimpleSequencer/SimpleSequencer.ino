@@ -111,11 +111,11 @@ void setup() {
   wave1.setWaveform(SAW);
   wave2.setWaveform(SAW);
 
-  // delay(2000);
+  delay(2000);
   seq.init(120);
   seq.setInternalClock(true);
   setupSequences();
-  setBPM(0);
+  // setBPM(0);
   initInterface();
 }
 
