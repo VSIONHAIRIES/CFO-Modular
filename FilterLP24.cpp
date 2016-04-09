@@ -1,4 +1,4 @@
-#include "FilterMoog.h"
+#include "FilterLP24.h"
 #define USE_MATH_DEFINES
 #include <math.h>
 #include <Arduino.h>
@@ -7,14 +7,14 @@
 #define RESOLUTION_FACTOR_THRESHOLD 230
 #define RESOLUTION_FACTOR_HIGH 32
 #define RESOLUTION_FACTOR_LOW 24
-FilterMoog::FilterMoog() : Filter() {
+FilterLP24::FilterLP24() : Filter() {
 
 	sample_rate = SAMPLE_RATE;
 	generateFilterCoefficientsMoogLadder();
 
 	k = 0;
 
-	x0 = 0;
+	x0 = x1 = 0;
 	v1 = y1 = z1 = 0;
 	v2 = y2 = z2 = 0;
 	v3 = y3 = z3 = 0;
@@ -23,8 +23,8 @@ FilterMoog::FilterMoog() : Filter() {
 }
 
 
-void FilterMoog::generateFilterCoefficientsMoogLadder() {
-	for(int i=0; i < FILTER_MOOG_NUM_COEFFICIENTS; i++) {
+void FilterLP24::generateFilterCoefficientsMoogLadder() {
+	for(int i=0; i < FILTER_LP24_NUM_COEFFICIENTS; i++) {
 		// double freq = (( pow ( 2, (i - 69.0) / 12.0 ) ) * 440.0);
 		double freq = (( pow ( 2, (i - 117.0) / 24.0 ) ) * 440.0);
 		fc[i] = uint64_t(freq / sample_rate * BIT_32_FLOAT);
@@ -51,9 +51,8 @@ void FilterMoog::generateFilterCoefficientsMoogLadder() {
 		G[i] = uint64_t(G_float * double((uint64_t(1) << resolution_factor)));
 		Gstage[i] = uint64_t(Gstage_float * double((uint64_t(1) << resolution_factor)));
 
-		// MOST OF THESE WILL BE ZERO. ADJUST THE BITSHIFTS TO INCREASE RESOLUTION
-		for(int k=0; k < FILTER_MOOG_NUM_K; k++) {
-			u_divisor[k][i] = uint64_t(1 / (1.0 + k * G_float) * double((uint64_t(1) << 32)));
+		for(int k=0; k < FILTER_LP24_NUM_K; k++) {
+			u_divisor[k][i] = uint64_t(1 / (1.0 - k * G_float) * double((uint64_t(1) << 32)));
 
 			// u_divisor[k-1][i] = uint64_t(1 / (1.0 + k * G_float) * double((uint64_t(1) << 32)));
 		}
@@ -63,14 +62,14 @@ void FilterMoog::generateFilterCoefficientsMoogLadder() {
 }
 
 
-void FilterMoog::setResonance(int res) {
+void FilterLP24::setResonance(int res) {
 	if(res < 0) res = 0;
-	else if(res > FILTER_MOOG_NUM_K) res = FILTER_MOOG_NUM_K;
+	else if(res > FILTER_LP24_NUM_K) res = FILTER_LP24_NUM_K;
 	k = res;
 }
 
 
-void FilterMoog::process() {
+void FilterLP24::process() {
 
 	_audioIn = *audioIn_ptr;
 	_cutoffIn = *cutoffIn_ptr;
@@ -84,13 +83,15 @@ void FilterMoog::process() {
 	// else if(c < 0) c = 0;
 
     int f = c>>23;
-    // if(f > 234) f = 234;
+    if(f > 233) f = 233;
 	int resolution_factor;
 	if(f < RESOLUTION_FACTOR_THRESHOLD) resolution_factor = RESOLUTION_FACTOR_HIGH;
 	if(f >= RESOLUTION_FACTOR_THRESHOLD) resolution_factor = RESOLUTION_FACTOR_LOW;
 
+	// x1 = x0;
 	x0 = int64_t(_audioIn);
 	int64_t S = (z1 * ggg[f] + z2 * gg[f] + z3 * g[f] + z4) >> resolution_factor;
+	// Serial.println(long(S));
 	int64_t Gs = Gstage[f];
 
 	// double u = (xn - k*S)/(1 + k*G);

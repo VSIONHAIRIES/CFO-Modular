@@ -11,7 +11,7 @@
 #include "Sequencer.h"
 #include "Mixer.h"
 #include "OscillatorSAW.h"
-#include "FilterMoog.h"
+#include "FilterLP24.h"
 
 IntervalTimer isrTimer;
 int sample_rate = 48000;
@@ -22,7 +22,7 @@ MIDI midi;
 EnvelopeWithDivision env1;
 EnvelopeWithDivision env2;
 OscillatorSAW saw;
-FilterMoog fltr;
+FilterLP24 fltr;
 Amplifier amp;
 Sequencer seq;
 
