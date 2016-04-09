@@ -12,7 +12,6 @@
 #include "FilterLP6.h"
 #include "Mixer.h"
 #include "OscillatorWAVE.h"
-#include "FilterMoog.h"
 
 IntervalTimer isrTimer;
 int sample_rate = 48000;
