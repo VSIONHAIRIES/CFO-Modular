@@ -34,7 +34,6 @@ void FilterLP6::process() {
 	_cutoffModSourceIn = *cutoffModSourceIn_ptr;
 	_cutoffModAmountIn = *cutoffModAmountIn_ptr;
 
-
 	int64_t mod = (int64_t(_cutoffModAmountIn) * (int64_t(_cutoffModSourceIn)))>>32;
 	int64_t c = (mod + int64_t(_cutoffIn));
 	if(c > SIGNED_BIT_32_HIGH) c = SIGNED_BIT_32_HIGH;
@@ -42,15 +41,11 @@ void FilterLP6::process() {
 	// int64_t c = _cutoffIn;
 
 	_x0 = _audioIn + SIGNED_BIT_32_HIGH;
-    _b1 = _filterCoefficient[c>>24]; 
+    _b1 = _filterCoefficient[c>>24];
     _a0 = BIT_32 - _b1;
-    
+
     _y0 = (_a0 * _x0 + _b1 * _y1) >> 32;
     _y1 = _y0;
-
-    // audioOut = (_a0 * _x0 + _b1 * lastSampleOutLP) >> 32;
-    // lastSampleOutLP = audioOut;
-   
 
 	_audioOut = _y0 - SIGNED_BIT_32_HIGH;
 

@@ -108,17 +108,29 @@ void setup() {
     fltr.cutoffIn_ptr = &cutoff;
     fltr.cutoffModAmountIn_ptr = &cutoffModAmount;
 
-    // delay(2000);
-    // for(int i=0; i < FILTER_MOOG_NUM_COEFFICIENTS; i++) {
-    //     //   Serial.println(double(fltr.Gstage[i]));
-    //     // Serial.println(double(fltr.fc[i] / BIT_32_FLOAT * sample_rate));
-    //     Serial.println((unsigned long)(fltr.u_divisor[3][i]));
-    // }
+    delay(3000);
+    for(int i=0; i < 128; i++) {
+        //   Serial.println(double(fltr.Gstage[i]));
+        // Serial.println(double(fltr.fc[i] / BIT_32_FLOAT * sample_rate));
+        // Serial.println((unsigned long)(fltr.u_divisor[3][i]));
+        // Serial.println((unsigned long)(env1._envelopeSpeedTable[i]));
+        Serial.println((unsigned long)(env1._filterCoefficient[i]));
+    }
     seq.init(120);
     seq.setInternalClock(true);
     setupSequences();
-    // setBPM(0);
+    setBPM(0);
     initInterface();
+    Serial.print("_b1_attack: ");
+    Serial.println((unsigned long)(env1._b1_attack));
+    Serial.print("_b1_decay: ");
+    Serial.println((unsigned long)(env1._b1_decay));
+    Serial.print("_b1_release: ");
+    Serial.println((unsigned long)(env1._b1_release));
+    Serial.print("_sustain: ");
+    Serial.println(env1._sustain);
+
+
 }
 
 

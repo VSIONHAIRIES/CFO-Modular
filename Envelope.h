@@ -1,4 +1,5 @@
-#pragma once
+#ifndef ENVELOPE_H
+#define ENVELOPE_H
 #include "AudioNode.h"
 
 class Envelope : public AudioNode {
@@ -21,3 +22,5 @@ protected:
 	int _envelopeOn;
 
 };
+
+#endif // ENVELOPE_H

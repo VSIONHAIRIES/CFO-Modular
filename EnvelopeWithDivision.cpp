@@ -11,7 +11,7 @@ EnvelopeWithDivision::EnvelopeWithDivision() : Envelope() {
 	setStage(0);
 	setAttack(12);
 	setDecay(64);
-	setSustain(127);
+	setSustain(0);
 	setRelease(48);
 	setVelSustain(127);
 	setVelPeak(127);
