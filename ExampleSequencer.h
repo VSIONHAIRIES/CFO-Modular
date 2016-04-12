@@ -2,10 +2,8 @@
 #define EXAMPLE_SEQUENCER_H
 
 #include <Arduino.h>
-// #include "synthesizer.h"
 #include "Teensy3DAC.h"
 #include "Amplifier.h"
-// #include "OscillatorSAW.h"
 #include "EnvelopeLinear.h"
 #include "MIDI.h"
 #include "Sequencer.h"
@@ -20,7 +18,7 @@ int sample_rate = 48000;
 Teensy3DAC t3dac(sample_rate);
 MIDI midi;
 EnvelopeLinear env1;
-// EnvelopeLinear env2;
+EnvelopeLinear env2;
 OscillatorSAW saw;
 FilterLP24 fltr;
 Amplifier amp;
@@ -39,7 +37,7 @@ int lowSignal = SIGNED_BIT_32_LOW;
 // The Interrupt Service Routine (ISR) for the synthesizer
 void synth_isr() {
     env1.process();
-    // env2.process();
+    env2.process();
     saw.process();
     fltr.process();
     amp.process();
@@ -59,23 +57,23 @@ void ExampleSequencer::start() {
     // Below hook up the various modules to each other
     // The order doesn't matter
 
-    // // env1.gateIn_ptr = &midi.gateOut;
-    // env1.gateIn_ptr = &seq.gateOut;
-    // env2.gateIn_ptr = &seq.gateOut;
-    //
-    // // saw1.frequencyIn_ptr = &midi.noteOut;
-    // saw.frequencyIn_ptr = &seq.noteOut;
-
-    env1.gateIn_ptr = &midi.gateOut;
-    // env2.gateIn_ptr = &midi.gateOut;
+    // env1.gateIn_ptr = &midi.gateOut;
+    env1.gateIn_ptr = &seq.gateOut;
+    env2.gateIn_ptr = &seq.gateOut;
 
     // saw1.frequencyIn_ptr = &midi.noteOut;
-    saw.frequencyIn_ptr = &midi.noteOut;
+    saw.frequencyIn_ptr = &seq.noteOut;
+
+    // env1.gateIn_ptr = &midi.gateOut;
+    // // env2.gateIn_ptr = &midi.gateOut;
+    //
+    // // saw1.frequencyIn_ptr = &midi.noteOut;
+    // saw.frequencyIn_ptr = &midi.noteOut;
 
     fltr.audioIn_ptr = &saw.audioOut;
     fltr.cutoffIn_ptr = &fullSignal;
-    // fltr.cutoffModSourceIn_ptr = &env2.envelopeOut;
-    fltr.cutoffModSourceIn_ptr = &noSignal;;
+    fltr.cutoffModSourceIn_ptr = &env2.envelopeOut;
+    // fltr.cutoffModSourceIn_ptr = &noSignal;;
     fltr.cutoffModAmountIn_ptr = &fullSignal;
 
     amp.audioIn_ptr = &fltr.audioOut;

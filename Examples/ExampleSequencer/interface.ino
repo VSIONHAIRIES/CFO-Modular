@@ -81,22 +81,22 @@ void updatePots() {
   switch(machineState) {
     case 0:                 // NO BUTTONS
       if(checkPot(0, machineState)) cutoff = pot_values[0][machineState] << 21;
-    //   if(checkPot(1, machineState)) cutoffModAmount = pot_values[1][machineState] << 21;
-      if(checkPot(1, machineState)) {
-        env1.setDecay(pot_values[1][machineState] >> 3);
-      }
+      if(checkPot(1, machineState)) cutoffModAmount = pot_values[1][machineState] << 21;
+    //   if(checkPot(1, machineState)) {
+    //     env1.setDecay(pot_values[1][machineState] >> 3);
+    //   }
     //   if(checkPot(1, machineState)) fltr.setResonance(pot_values[1][machineState] >> 8);
       break;
     case 1:                 // BUTTON 1
-    //   if(checkPot(0, machineState)) env2.setAttack(pot_values[0][machineState] >> 3);
-    //   if(checkPot(1, machineState)) {
-    //     env2.setDecay(pot_values[1][machineState] >> 3);
-    //     env2.setRelease(pot_values[1][machineState] >> 3);
-    //   }
-    if(checkPot(0, machineState)) env1.setAttack(pot_values[0][machineState] >> 3);
-    if(checkPot(1, machineState)) {
-      env1.setRelease(pot_values[1][machineState] >> 3);
-    }
+      if(checkPot(0, machineState)) env2.setAttack(pot_values[0][machineState] >> 3);
+      if(checkPot(1, machineState)) {
+        env2.setDecay(pot_values[1][machineState] >> 3);
+        env2.setRelease(pot_values[1][machineState] >> 3);
+      }
+    // if(checkPot(0, machineState)) env1.setAttack(pot_values[0][machineState] >> 3);
+    // if(checkPot(1, machineState)) {
+    //   env1.setRelease(pot_values[1][machineState] >> 3);
+    // }
       break;
     case 2:                 // BUTTON 2
       if(checkPot(0, machineState));
