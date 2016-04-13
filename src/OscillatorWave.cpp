@@ -1,14 +1,14 @@
 #include <Arduino.h>
 #include "OscillatorWAVE.h"
 
-const uint8_t waveTable[] = { 
-	#include <waveTable8bit.inc>
+const uint8_t waveTable[] = {
+	#include "data/waveTable8bit.inc"
 };
 
 
 OscillatorWAVE::OscillatorWAVE(): Oscillator() {
 	_waveform = 0;
-	indx = 0;	
+	indx = 0;
 	lowestIndx = 0;
 	highestIndx = 0;
 }
@@ -41,5 +41,3 @@ void OscillatorWAVE::setWaveform(int waveform) {
 	if(waveform < 16) _waveform = waveform << 8;
 	// Serial.println(_waveform);
 }
-
-

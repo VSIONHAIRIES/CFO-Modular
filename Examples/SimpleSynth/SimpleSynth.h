@@ -2,17 +2,14 @@
 #define SIMPLE_SYNTH_H
 
 #include <Arduino.h>
-// #include "synthesizer.h"
+#include "MIDI.h"
+#include "EnvelopeWithDivision.h"
+#include "OscillatorSAW.h"
+#include "OscillatorWAVE.h"
+#include "Mixer.h"
+#include "FilterLP6.h"
 #include "Teensy3DAC.h"
 #include "Amplifier.h"
-#include "OscillatorSAW.h"
-#include "FilterLP6.h"
-#include "EnvelopeWithDivision.h"
-#include "MIDI.h"
-#include "Mixer.h"
-#include "OscillatorWAVE.h"
-
-
 
 IntervalTimer isrTimer;
 

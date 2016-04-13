@@ -1,6 +1,6 @@
 #include <math.h>
 #include <EEPROM.h>
-#include <ExampleSequencer.h>
+#include "ExampleSequencer.h"
 
 #define MIDI_CHANNEL 1
 #define NUM_TRACKS 8
@@ -20,7 +20,6 @@ int track[8];
 int _bpm;
 
 const int scale[] = {0, 2, 3, 5, 7, 8, 10, 12};
-//const int octave[] = {-24, -12, 0, 12, 24};
 int rootNote = 36;
 
 int trackPlaying = 0;
@@ -34,11 +33,6 @@ int notes[64];
 int octave[64];
 int noteValues[8];
 int note; // is this needed?
-
-//int var = 0;
-//const int pot1 = A0, pot2 = A1;
-
-//boolean debug = true;
 
 //////////
 // LEDS //
@@ -104,22 +98,23 @@ int pot_lastMachineState[NUM_POTS] = {0, 0};
 
 void setup() {
 
+    wipe_eeprom();
     synth.start();
     fltr.cutoffIn_ptr = &cutoff;
     fltr.cutoffModAmountIn_ptr = &cutoffModAmount;
 
-    delay(3000);
-    for(int i=0; i < 128; i++) {
-        //   Serial.println(double(fltr.Gstage[i]));
-        // Serial.println(double(fltr.fc[i] / BIT_32_FLOAT * sample_rate));
-        // Serial.println((unsigned long)(fltr.u_divisor[3][i]));
-        // Serial.println((unsigned long)(env1._envelopeSpeedTable[i]));
-        Serial.println((unsigned long)(env1._filterCoefficient[i]));
-    }
+    // delay(3000);
+    // for(int i=0; i < 128; i++) {
+    //     //   Serial.println(double(fltr.Gstage[i]));
+    //     // Serial.println(double(fltr.fc[i] / BIT_32_FLOAT * sample_rate));
+    //     // Serial.println((unsigned long)(fltr.u_divisor[3][i]));
+    //     // Serial.println((unsigned long)(env1._envelopeSpeedTable[i]));
+    //     Serial.println((unsigned long)(env1._filterCoefficient[i]));
+    // }
     seq.init(120);
     seq.setInternalClock(true);
     setupSequences();
-    setBPM(0);
+    // setBPM(0);
     initInterface();
     Serial.print("_b1_attack: ");
     Serial.println((unsigned long)(env1._b1_attack));
@@ -129,9 +124,9 @@ void setup() {
     Serial.println((unsigned long)(env1._b1_release));
     Serial.print("_sustain: ");
     Serial.println(env1._sustain);
-
-
 }
+
+
 
 
 void loop() {
@@ -174,14 +169,6 @@ void loop() {
 }
 
 
-// void playTrack() {
-//   if(keyChange) {
-//     Serial.println("PLAY TRACK");
-//   // code here
-//   keyChange = 0;
-//   }
-// }
-
 void playTrack() {
     if(keyChange && keys) {
         Serial.print("PLAY TRACK ");
@@ -219,27 +206,12 @@ void selectNote() {
             octave[stepSelected + NUM_TRACKS * trackSelected] = oct;
             EEPROM.write(stepSelected + trackSelected * NUM_TRACKS + OCT_EEPROM_OFFSET, oct);
         }
-        // for(int i = 0; i < NUM_STEPS; i++) {
-        //   noteValues[i] = rootNote + scale[notes[8 * trackSelected + i]] + octave[i + 8 * trackSelected] * 12;
-        //   seq.insertNotes(track[trackSelected], noteValues, 8, 0);
-        // }
-        // int note_position = scale[notes[stepSelected + NUM_TRACKS * trackSelected]];
-        // int note_octave = octave[stepSelected + NUM_TRACKS * trackSelected] * 12;
-        // noteValues[0] = rootNote + note_position + note_octave;
         if(noteSelected == 255) {
             noteValues[0] = 0;
         } else {
             noteValues[0] = rootNote + scale[notes[stepSelected + NUM_TRACKS * trackSelected]]
             + octave[stepSelected + NUM_TRACKS * trackSelected] * 12;
         }
-        // Serial.print("Inserting note in sequencer: ");
-        // Serial.println(noteValues[0]);
-        // Serial.print("rootNote: ");
-        // Serial.println(rootNote);
-        // Serial.print("note_position: ");
-        // Serial.println(note_position);
-        // Serial.print("note_octave: ");
-        // Serial.println(note_octave);
         seq.insertNotes(track[trackSelected], noteValues, 1, stepSelected);
         keyChange = 0;
     }
@@ -374,5 +346,15 @@ void setupSequences() {
         Serial.print(track[i]);
         Serial.print(" - Internal = ");
         Serial.println(seq.getInternal(track[i]));
+    }
+}
+
+
+void wipe_eeprom() {
+    for(int i = 0; i < NUM_TRACKS; i++) {
+        for(int j = 0; j < NUM_STEPS; j++) {
+            EEPROM.write(j + i * NUM_TRACKS, 0);
+            EEPROM.write(j + i * NUM_TRACKS + OCT_EEPROM_OFFSET, 0);
+        }
     }
 }

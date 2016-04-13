@@ -2,10 +2,6 @@
 #define USE_MATH_DEFINES
 #include <math.h>
 
-const int64_t filterCoefficient[] = {
-	#include <filterCoefficients_1poleLP.inc>
-};
-
 #define SAMPLE_RATE 48000.0f
 
 

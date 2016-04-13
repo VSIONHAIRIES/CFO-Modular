@@ -1,6 +1,6 @@
 #include <math.h>
 #include <EEPROM.h>
-#include <SimpleSequencer.h>
+#include "SimpleSequencer.h"
 
 #define MIDI_CHANNEL 1
 #define NUM_TRACKS 8
@@ -20,7 +20,6 @@ int track[8];
 int _bpm;
 
 const int scale[] = {0, 2, 3, 5, 7, 8, 10, 12};
-//const int octave[] = {-24, -12, 0, 12, 24};
 int rootNote = 36;
 
 int trackPlaying = 0;
@@ -33,12 +32,7 @@ int oct = 0;
 int notes[64];
 int octave[64];
 int noteValues[8];
-int note; // is this needed?
-
-//int var = 0;
-//const int pot1 = A0, pot2 = A1;
-
-//boolean debug = true;
+int note;
 
 //////////
 // LEDS //
@@ -63,7 +57,6 @@ unsigned long ledPulse = 100;
 unsigned long debounceTime = 40;
 unsigned long debounceTimeDefault = 40;
 unsigned long debounceTimeLong = 100;
-// const int debounceTime = 40;
 const int buttonPin [] = {11,12,2};
 int buttonIndex = 0;
 int buttonRead = 0;
