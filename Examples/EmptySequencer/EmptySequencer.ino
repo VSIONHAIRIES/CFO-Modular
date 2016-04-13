@@ -1,5 +1,6 @@
 #include <math.h>
 #include <EEPROM.h>
+#include "MIDI.h"
 #include "EmptySequencer.h"
 
 #define MIDI_CHANNEL 1
