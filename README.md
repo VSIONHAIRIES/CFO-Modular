@@ -39,3 +39,12 @@ NOTE: there is also 1 switch, on the top right, kills one of the two audio chann
 * B1 + B3 :: chain tracks
 * B1 + B2 :: no function
 * B1 + B2 + B3 :: clear track *experimental*
+
+## ARDUINO
+
+### DEPENDENCIES + SYSTEM REQUIREMENTS
+
+* [Arduino 1.6.8+](https://www.arduino.cc/en/Main/Software)
+* [Teensyduino 1.28](https://www.pjrc.com/teensy/td_download.html)
+
+note that when installing *Teensyduino* under *Libraries to Install* select *None*.
