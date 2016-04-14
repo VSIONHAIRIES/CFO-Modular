@@ -104,7 +104,12 @@ void updatePots() {
       break;
     case 5:                 // BUTTON 1 + 3
       if(checkPot(0, machineState)) setBPM(pot_values[0][machineState] >> 2);
-      if(checkPot(1, machineState)) seq.setGatewidthAllSeqs(pot_values[1][machineState] >> 3);
+      if(checkPot(1, machineState)) {
+          int value = pot_values[1][machineState] >> 6;
+          seq.setSubdivAllSeqsByIndex(value);
+          if(value < 8) seq.set_restart_countdown(7);
+          else seq.set_restart_countdown(0);
+      }
       break;
     case 6:                 // BUTTON 2 + 3
       if(checkPot(0, machineState));

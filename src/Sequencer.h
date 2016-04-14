@@ -116,6 +116,8 @@ class Sequencer : public AudioNode {
     bool setSubdiv(int index, SUBDIV subdiv);
     void setSubdivAllSeqs(SUBDIV subdiv);
     int getSubdiv(int index);
+    void setSubdivByIndex(int index, int subdiv_i);
+    void setSubdivAllSeqsByIndex(int subdiv_i);
 
     bool setLoopType(int index, SEQ_LOOP_TYPE loop);
     int getLoopType(int index);
@@ -131,8 +133,11 @@ class Sequencer : public AudioNode {
     void setGatewidth(int index, int gw);
     void setGatewidthAllSeqs(int gw);
 
-    // bool setSelectedPosition(int s);
-    // int getSelectededPosition();
+    // void enable_restart(bool restart) { restart_enabled = restart; }
+    // bool get_restart() { return restart_enabled; }
+
+    void set_restart_countdown(int number);
+    void reset_restart_countdown();
 
     int noteOut;
     int gateOut;
@@ -149,7 +154,7 @@ class Sequencer : public AudioNode {
     bool continueOut;
     bool stopOut;
 
-  protected:
+protected:
 
     seq* _sequences[MAX_SEQ];
     int _bpm;
@@ -169,7 +174,9 @@ class Sequencer : public AudioNode {
     sequencerClock_cb sequencerClockCB_stop;
     sequencerClock_cb sequencerClockCB_continue;
 
-
+    bool restart_enabled;
+    int restart_countdown;
+    int restart_counter;
     bool _clockIn;
     bool _startIn;
     bool _continueIn;

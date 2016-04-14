@@ -12,8 +12,9 @@ Sequencer::Sequencer() {
     for(int i = 0; i < MAX_SEQ; i++) {
         _sequences[i] = NULL;
     }
+    set_restart_countdown(0);
+    reset_restart_countdown();
 }
-
 
 Sequencer::Sequencer(int bpm) {
     setbpm(bpm);
@@ -21,6 +22,8 @@ Sequencer::Sequencer(int bpm) {
     for(int i = 0; i < MAX_SEQ; i++) {
         _sequences[i] = NULL;
     }
+    set_restart_countdown(0);
+    reset_restart_countdown();
 }
 
 
@@ -30,6 +33,8 @@ void Sequencer::init(int bpm) {
     for(int i = 0; i < MAX_SEQ; i++) {
         _sequences[i] = NULL;
     }
+    set_restart_countdown(0);
+    reset_restart_countdown();
 }
 
 
@@ -105,11 +110,16 @@ void Sequencer::clock()
 
 void Sequencer::start()
 {
-    clockTick = 0;
-    for(int i = 0; i < MAX_SEQ; i++) {
-        startSequence(i);
+    if(restart_counter < 1) {
+        // if(clockTick && !restart_enabled) return;
+        clockTick = 0;
+        for(int i = 0; i < MAX_SEQ; i++) {
+            startSequence(i);
+        }
+        reset_restart_countdown();
+    } else {
+        restart_counter -= 1;
     }
-    // sendStart();
 }
 
 
@@ -119,7 +129,6 @@ void Sequencer::continues()
     for(int i = 0; i < MAX_SEQ; i++) {
         continueSequence(i);
     }
-    // sendContinue();
 }
 
 
@@ -495,6 +504,26 @@ void Sequencer::setSubdivAllSeqs(SUBDIV subdiv) {
 }
 
 
+void Sequencer::setSubdivAllSeqsByIndex(int subdiv_i) {
+    int index = 0;
+    while(index < MAX_SEQ && _sequences[index] != NULL) {
+        setSubdivByIndex(index, subdiv_i);
+        index++;
+    }
+}
+
+
+void Sequencer::setSubdivByIndex(int index, int subdiv_i) {
+    if(subdiv_i > 0 && subdiv_i < 15) {
+        SUBDIV subdivIndex[] = {NOTE_0, NOTE_1, NOTE_1DOT, NOTE_2, NOTE_3, NOTE_4, NOTE_6, NOTE_8, NOTE_12, NOTE_16, NOTE_24, NOTE_32, NOTE_48, NOTE_64, NOTE_96};
+        if(index < MAX_SEQ && _sequences[index] != NULL) {
+            _sequences[index]->setsubdiv(subdivIndex[subdiv_i]);
+            index++;
+        }
+    }
+}
+
+
 int Sequencer::getSubdiv(int index)
 {
     if(index >= 0 && index < MAX_SEQ && _sequences[index] != NULL) {
@@ -576,8 +605,15 @@ void Sequencer::setGatewidthAllSeqs(int gw) {
 }
 
 
+void Sequencer::set_restart_countdown(int number) {
+    restart_countdown = number;
+    // reset_restart_countdown();
+}
 
 
+void Sequencer::reset_restart_countdown() {
+    restart_counter = restart_countdown;
+}
 
 
 
