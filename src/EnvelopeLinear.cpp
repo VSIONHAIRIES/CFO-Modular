@@ -58,16 +58,16 @@ void EnvelopeLinear::process() {
 		_stage = 1; // transition from LOW to HIGH: attack (stage 1) starts
 		_env_target = MAX_ENV_TARGET;
 		_b1 = _b1_attack;
-		Serial.print("STAGE 1 - ");
-		Serial.println((long)_env);
+		// Serial.print("STAGE 1 - ");
+		// Serial.println((long)_env);
 	}
 	// if(_lastGateIn > 0  && _gateIn > 0); // Continous HIGH: attack (stage 1), decay (stage 2) and sustain (stage 3). Wait for release
 	if(_lastGateIn > 0  && _gateIn < 0) {
 		_stage = 4; // transition from HIGH to LOW: Release (stage 4) begins
 		_env_target = 127;
 		_b1 = _b1_release;
-		Serial.print("STAGE 4 - ");
-		Serial.println((long)_env);
+		// Serial.print("STAGE 4 - ");
+		// Serial.println((long)_env);
 	}
 	_lastGateIn = _gateIn;
 
@@ -80,8 +80,8 @@ void EnvelopeLinear::process() {
 				_stage = 2;
 				_env_target = _sustain;
 				_b1 = _b1_decay;
-				Serial.print("STAGE 2 - ");
-				Serial.println((long)_env);
+				// Serial.print("STAGE 2 - ");
+				// Serial.println((long)_env);
 			}
 
 		break;
@@ -94,10 +94,10 @@ void EnvelopeLinear::process() {
 
 				_stage = 3;
 				_env_target = _sustain;
-				Serial.print("STAGE 3 - ");
-				Serial.println((long)_env);
-				Serial.print("_sustain: ");
-				Serial.println((long)_sustain);
+				// Serial.print("STAGE 3 - ");
+				// Serial.println((long)_env);
+				// Serial.print("_sustain: ");
+				// Serial.println((long)_sustain);
 			}
 		}
 		break;
@@ -115,8 +115,8 @@ void EnvelopeLinear::process() {
 			if(_env < 127) {
 				_env = 127;
 				_stage = 0;
-				Serial.print("STAGE 0 - ");
-				Serial.println((long)_env);
+				// Serial.print("STAGE 0 - ");
+				// Serial.println((long)_env);
 			}
 		}
 		break;

@@ -1,6 +1,6 @@
 #include <math.h>
 #include <EEPROM.h>
-#include "ExampleSequencer.h"
+#include "LFOSequencer.h"
 
 #define MIDI_CHANNEL 1
 #define NUM_TRACKS 8
@@ -8,10 +8,11 @@
 #define OCT_EEPROM_OFFSET (NUM_TRACKS * NUM_STEPS)
 #define NUM_LEDS 8
 
-ExampleSequencer synth;
+LFOSequencer synth;
 
 int cutoffModAmount = 0;
 int cutoff = 0;
+int wave2frequency = 0;
 
 int mode;
 
@@ -102,6 +103,9 @@ void setup() {
     synth.start();
     fltr.cutoffIn_ptr = &cutoff;
     fltr.cutoffModAmountIn_ptr = &cutoffModAmount;
+    wave2.frequencyIn_ptr = &wave2frequency;
+    wave2._lfo = true;
+
 
     seq.init(120);
     seq.setInternalClock(true);

@@ -99,24 +99,24 @@ void updatePots() {
     // }
       break;
     case 2:                 // BUTTON 2
-      if(checkPot(0, machineState));
-      if(checkPot(1, machineState));
+      if(checkPot(0, machineState)) wave2frequency = pot_values[0][machineState] << 21;
+      if(checkPot(1, machineState)) wave2.setWaveform(pot_values[1][machineState] >> 6);
       break;
     case 3:                 // BUTTON 1 + 2
       if(checkPot(0, machineState));
       if(checkPot(1, machineState));
       break;
     case 4:                 // BUTTON 3
-      if(checkPot(0, machineState));
+      if(checkPot(0, machineState)) wave1.setWaveform(pot_values[0][machineState] >> 6);
       if(checkPot(1, machineState)) ;
       break;
     case 5:                 // BUTTON 1 + 3
       if(checkPot(0, machineState)) setBPM(pot_values[0][machineState] >> 2);
       if(checkPot(1, machineState)) {
-        //   int value = pot_values[1][machineState] >> 6;
-        //   seq.setSubdivAllSeqsByIndex(value);
-        //   if(value < 8) seq.set_restart_countdown(7);
-        //   else seq.set_restart_countdown(0);
+          int value = pot_values[1][machineState] >> 6;
+          seq.setSubdivAllSeqsByIndex(value);
+          if(value < 8) seq.set_restart_countdown(7);
+          else seq.set_restart_countdown(0);
       }
       break;
     case 6:                 // BUTTON 2 + 3
