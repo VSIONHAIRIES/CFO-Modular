@@ -19,14 +19,17 @@ int Bodyseq::track_playing = 0;
 int Bodyseq::track_selected = 0;
 int Bodyseq::step_selected = 0;
 int Bodyseq::note_selected = 0;
+int Bodyseq::octave_selected = 0;
 int Bodyseq::track_chained = -1;
 int Bodyseq::oct = 0;
+int Bodyseq::slide = 0;
 int Bodyseq::root_note = 36;
 int Bodyseq::last_indx = 0;
 unsigned long Bodyseq::debounce_time = 40;
 unsigned long Bodyseq::debounce_time_default = 40;
 unsigned long Bodyseq::debounce_time_long = 100;
 int Bodyseq::octave[]{};
+int Bodyseq::slides[]{};
 
 
 /////////////
@@ -203,6 +206,7 @@ void Leds::update() {
     int track_playing = Bodyseq::track_playing;
     int track_chained = Bodyseq::track_chained;
     int *octave = Bodyseq::octave;
+    int *slides = Bodyseq::slides;
     int mode = Bodyseq::mode;
     leds = 0;
 
@@ -217,17 +221,19 @@ void Leds::update() {
             leds |= (chainedLedState << track_chained);
         }
         break;
-        case 1: // SELECT STEP
+        case 1: // SELECT NOTE
         leds = 0 | (1 << n);
-        leds = leds | (octave[s + NUM_TRACKS*t] << 7);
+        leds |= slides[s + NUM_TRACKS*t] << 7; // the slide indicator is hiding as bit 7 in the octave array for each step.
         // for(int i=0; i<NUM_STEPS; i++) {
         //   leds |= (sample[t][s][i] << i);
         // }
         break;
-        case 2: // SELECT SAMPLE
+        case 2: // SELECT STEP
         leds |= (1 << s);
         break;
-        case 3: // SELECT TRACK
+        case 3: // SELECT OCTAVE
+
+        leds = leds | (1 << (octave[s + NUM_TRACKS*t] + 3));
         // leds |= (1 << trackSelected);
         break;
         case 4: // SELECT TRACK
@@ -301,8 +307,10 @@ Bodyseq::Bodyseq() {
     track_selected = 0;
     step_selected = 0;
     note_selected = 0;
+    octave_selected = 0;
     track_chained = -1;
     oct = 0;
+    slide = 0;
     root_note = 36;
     last_indx = 0;
     debounce_time_default = 40;
@@ -353,27 +361,28 @@ void Bodyseq::update() {
     pots.update();
 
     switch(mode) {
-        case 0:
+        case 0:                 // NO_BUTTONS
             playTrack();
             break;
-        case 1:
+        case 1:                 // BUTTON_1
             selectNote();
             break;
-        case 2:
+        case 2:                 // BUTTON_2
             selectStep();
             break;
-        case 3: // nothing
+        case 3:                 // BUTTON_1_2
+            selectOctave();
             break;
-        case 4:
+        case 4:                 // BUTTON_3
             selectTrack();
             break;
-        case 5: // nothing
+        case 5:                 // BUTTON_1_3
             chainTrack();
             break;
-        case 6:
+        case 6:                 // BUTTON_2_3
             copyTrack();
             break;
-        case 7:
+        case 7:                 // BUTTON_1_2_3
             clearTrack();
             break;
         default:
@@ -403,7 +412,8 @@ void Bodyseq::playTrack() {
 
 void Bodyseq::selectNote() {
     note_selected = notes[step_selected + NUM_TRACKS * track_selected];
-    oct = octave[step_selected + NUM_TRACKS * track_selected];
+    octave_selected = octave[step_selected + NUM_TRACKS * track_selected];
+    slide = slides[step_selected + NUM_TRACKS * track_selected];
     if(keychange) {
         for(int i = 0; i < NUM_KEYS-1; i++) {
             if(keys & (1 << i)) {
@@ -411,15 +421,49 @@ void Bodyseq::selectNote() {
                 else note_selected = i;
             }
             notes[step_selected + NUM_TRACKS * track_selected] = note_selected;
-            // Serial.print("noteSelected: ");
-            // Serial.println(notes[stepSelected + NUM_TRACKS * trackSelected]);
+            // Serial.print("note_selected: ");
+            // Serial.println(notes[step_selected + NUM_TRACKS * track_selected]);
             EEPROM.write(step_selected + track_selected * NUM_TRACKS, note_selected);
         }
         if(keys & (1 << 7)) {
-            oct ^= 1;
-            octave[step_selected + NUM_TRACKS * track_selected] = oct;
-            EEPROM.write(step_selected + track_selected * NUM_TRACKS + OCT_EEPROM_OFFSET, oct);
+            slide ^= 1;
+            slides[step_selected + NUM_TRACKS * track_selected] = slide;
+            uint8_t octa = (octave_selected + 3) | (slide << 7);
+            EEPROM.write(step_selected + track_selected * NUM_TRACKS + OCT_EEPROM_OFFSET, octa);
         }
+        if(note_selected == 255) {
+            noteValues[0] = 0;
+        } else {
+            noteValues[0] = root_note + scale[notes[step_selected + NUM_TRACKS * track_selected]]
+            + octave[step_selected + NUM_TRACKS * track_selected] * 12;
+        }
+        slideValues[0] = slide;
+        sequencer->insertNotes(track[track_selected], noteValues, 1, step_selected);
+        sequencer->insertSlides(track[track_selected], slideValues, 1, step_selected);
+        // INSERT SLIDES
+        keychange = 0;
+    }
+}
+
+
+void Bodyseq::selectOctave() {
+    note_selected = notes[step_selected + NUM_TRACKS * track_selected];
+    octave_selected = octave[step_selected + NUM_TRACKS * track_selected];
+    slide = slides[step_selected + NUM_TRACKS * track_selected];
+    if(keychange) {
+        for(int i = 0; i < NUM_KEYS-1; i++) {
+            if(keys & (1 << i)) {
+                octave_selected = i-3;
+            }
+            octave[step_selected + NUM_TRACKS * track_selected] = octave_selected;
+            uint8_t octa = (octave_selected + 3) | (slide << 7);
+            EEPROM.write(step_selected + track_selected * NUM_TRACKS + OCT_EEPROM_OFFSET, octa);
+        }
+        // if(keys & (1 << 7)) {
+        //     slide ^= 1;
+        //     octave[step_selected + NUM_TRACKS * track_selected] = oct;
+        //     EEPROM.write(step_selected + track_selected * NUM_TRACKS + OCT_EEPROM_OFFSET, oct);
+        // }
         if(note_selected == 255) {
             noteValues[0] = 0;
         } else {
@@ -430,6 +474,7 @@ void Bodyseq::selectNote() {
         keychange = 0;
     }
 }
+
 
 void Bodyseq::selectStep() {
     if(keychange) {
@@ -445,6 +490,7 @@ void Bodyseq::selectStep() {
         keychange = 0;
     }
 }
+
 
 void Bodyseq::selectTrack() {
     if(keychange) {
@@ -486,13 +532,17 @@ void Bodyseq::copyTrack() {
                 for(int j=0; j<NUM_STEPS; j++) {
                     notes[8*i + j] = notes[8*track_selected + j];
                     octave[8*i + j] = octave[8*track_selected + j];
+                    slides[8*i + j] = slides[8*track_selected + j];
                     noteValues[j] = root_note + scale[notes[8*track_selected + j]]
                     + octave[8*track_selected + j] * 12;
                     EEPROM.write(j + i * NUM_TRACKS, notes[8*i + j]);
-                    EEPROM.write(j + i * NUM_TRACKS + OCT_EEPROM_OFFSET, octave[8*i + j]);
+                    uint8_t octa = (octave[8*i + j] + 3) | (slides[8*i + j] << 7); // pack octave and slide
+                    EEPROM.write(j + i * NUM_TRACKS + OCT_EEPROM_OFFSET, octa);
+                    // EEPROM.write(j + i * NUM_TRACKS + OCT_EEPROM_OFFSET, octave[8*i + j]);
                 }
                 track_selected = i;
                 sequencer->insertNotes(track[track_selected], noteValues, 8, step_selected);
+                // INSERT SLIDES
             }
         }
         keychange = 0;
@@ -509,10 +559,12 @@ void Bodyseq::clearTrack() {
                 for(int j=0; j<NUM_STEPS; j++) {
                     notes[8*i + j] = 0;
                     octave[8*i + j] = 0;
+                    slides[8*i + j] = 0;
                     noteValues[0] = 0;
                     sequencer->insertNotes(track[track_selected], noteValues, 1, step_selected);
+                    sequencer->insertSlides(track[track_selected], slideValues, 1, step_selected);
                     EEPROM.write(j + i * NUM_TRACKS, 0);
-                    EEPROM.write(j + i * NUM_TRACKS + OCT_EEPROM_OFFSET, 0);
+                    EEPROM.write(j + i * NUM_TRACKS + OCT_EEPROM_OFFSET, 3);
                 }
             }
         }
@@ -525,8 +577,14 @@ void Bodyseq::setupSequences() {
     for(int i = 0; i < NUM_TRACKS; i++) {
         for(int j = 0; j < NUM_STEPS; j++) {
             notes[NUM_TRACKS*i + j] = EEPROM.read(i * NUM_TRACKS + j);
-            octave[NUM_TRACKS*i + j] = EEPROM.read(i * NUM_TRACKS + j + OCT_EEPROM_OFFSET);
-            if(octave[NUM_TRACKS*i + j] > 1) octave[NUM_TRACKS*i + j] = 1;
+            // octave[NUM_TRACKS*i + j] = EEPROM.read(i * NUM_TRACKS + j + OCT_EEPROM_OFFSET);
+            oct = EEPROM.read(i * NUM_TRACKS + j + OCT_EEPROM_OFFSET) & 0x07;
+            slide = EEPROM.read(i * NUM_TRACKS + j + OCT_EEPROM_OFFSET) & 0x80;
+            // Serial.println(oct);
+            if(oct > 6) oct = 6;
+            if(oct < 0) oct = 0;
+            octave[NUM_TRACKS*i + j] = oct - 3;
+            slides[NUM_TRACKS*i + j] = slide;
             // notes[8*i + j] = j;
         }
         track[i] = sequencer->newSequence(NOTE_16, 8, LOOP);
@@ -536,17 +594,19 @@ void Bodyseq::setupSequences() {
         // Serial.println(i);
         // seq.startSequence(track[i]);
         for(int j = 0; j < NUM_STEPS; j++) {
-            int note = notes[8 * i + j];
+            int note = notes[NUM_TRACKS * i + j];
             if(note == 255) {
                 noteValues[j] = 0;
                 // Serial.println("ENCOUNTERED -1");
             } else {
-                noteValues[j] = root_note + scale[notes[8 * i + j]] + octave[8 * i + j] * 12;
+                noteValues[j] = root_note + scale[notes[8 * i + j]] + octave[NUM_TRACKS * i + j] * 12;
             }
+            slideValues[j] = slides[NUM_TRACKS*i + j];
             // noteValues[j] = rootNote + scale[notes[8 * i + j]] + octave[8 * i + j] * 12;
             // noteValues[j] = rootNote;
         }
         sequencer->insertNotes(track[i], noteValues, 8, 0);
+        sequencer->insertSlides(track[i], slideValues, 8, 0);
         sequencer->setInternal(track[i], false);
         sequencer->setExternal(track[i], false);
         // Serial.print("Internal set to ");
@@ -567,7 +627,7 @@ void Memory::wipe_eeprom() {
     for(int i = 0; i < NUM_TRACKS; i++) {
         for(int j = 0; j < NUM_STEPS; j++) {
             EEPROM.write(j + i * NUM_TRACKS, 0);
-            EEPROM.write(j + i * NUM_TRACKS + OCT_EEPROM_OFFSET, 0);
+            EEPROM.write(j + i * NUM_TRACKS + OCT_EEPROM_OFFSET, 3);
         }
     }
 }

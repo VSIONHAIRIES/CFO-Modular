@@ -34,7 +34,7 @@ Oscillator::Oscillator() : AudioNode() {
 
 	// Low Pass filter table for the portamento function	for (int i=0; i<128; i++) {
 	for (int i=0; i<128; i++) {
-		double fc = ( ( pow ( 2, ( ( double(i) - 120.0 - 69.0) / 24.0 ) ) ) * 440.0 ) / SAMPLE_RATE;
+		double fc = ( ( pow ( 2, ( ( double(i) - 140.0 - 69.0) / 24.0 ) ) ) * 440.0 ) / SAMPLE_RATE;
 		_portamentoLPCoefficient[127 - i] = int64_t ( BIT_32_FLOAT * ( exp ( M_PI * -2.0 * fc ) ) );
 	}
 

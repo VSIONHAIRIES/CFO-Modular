@@ -146,6 +146,7 @@ public:
     void playTrack();
     void selectNote();
     void selectStep();
+    void selectOctave();
     void selectTrack();
     void chainTrack();
     void copyTrack();
@@ -168,18 +169,23 @@ public:
     static int indx;
     static int last_indx;
     static int oct;
+    static int slide;
     static int root_note;
 
     static int track_selected;
     static int step_selected;
     static int note_selected;
+    static int octave_selected;
     static int track_playing;
     static int track_chained;
 
     static int octave[NUM_TRACKS * NUM_STEPS];
+    static int slides[NUM_TRACKS * NUM_STEPS];
     int track[NUM_TRACKS];
     int notes[NUM_TRACKS * NUM_STEPS];
     int noteValues[8];
+    int slideValues[8];
+    int octaveValues[8];
     int note; // is this needed?
 
     const int scale[8] = {0, 2, 3, 5, 7, 8, 10, 12};

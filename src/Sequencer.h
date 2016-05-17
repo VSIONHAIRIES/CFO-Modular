@@ -89,9 +89,6 @@ class Sequencer : public AudioNode {
     void setbpm(int bpm);
     int getbpm();
 
-    void setPortamento(int portamento);
-    int getPortamento();
-
     bool setChannel(int index, int c);
     int getChannel(int index);
 
@@ -137,6 +134,8 @@ class Sequencer : public AudioNode {
     void setGatewidth(int index, int gw);
     void setGatewidthAllSeqs(int gw);
 
+    void setPortamentoAllSeqs(int portamento);
+    void setPortamento(int index, int portamento);
     // void enable_restart(bool restart) { restart_enabled = restart; }
     // bool get_restart() { return restart_enabled; }
 
@@ -169,8 +168,6 @@ protected:
     unsigned long timeNow;
     unsigned long lastTime;
     unsigned long tickTime;
-
-    int _portamento;
 
     int selectedSequence;
     int selectedPosition;
@@ -212,6 +209,7 @@ class seq {
     bool _stopped;
     bool _internal;
     bool _external;
+    int _portamento;
     SUBDIV _subdiv;
     int _gatewidth;
     SEQ_LOOP_TYPE _loop;
@@ -227,7 +225,7 @@ class seq {
 
     void trigger(int *noteout_ptr, int *gateout_ptr); //, int *noteoffout_ptr, int *noteonout_ptr);
     void triggerNoteOff(int *noteout_ptr, int *gateout_ptr); //, int *noteoffout_ptr, int *noteonout_ptr);
-    void triggerNoteOn(int *noteout_ptr, int *gateout_ptr); //, int *noteoffout_ptr, int *noteonout_ptr);
+    void triggerNoteOn(int *noteout_ptr, int *gateout_ptr, int *portamentoout_ptr); //, int *noteoffout_ptr, int *noteonout_ptr);
 
     void setchannel(int c);
     int getchannel();
@@ -258,6 +256,8 @@ class seq {
 
     void setsubdiv(SUBDIV sd);
     SUBDIV getsubdiv();
+
+    void setportamento(int portamento);
 
     void setgatewidth(int gw);
     int getgatewidth();

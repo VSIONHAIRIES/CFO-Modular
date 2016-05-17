@@ -8,7 +8,7 @@
 
 Sequencer::Sequencer() {
     setbpm(120);
-    setPortamento(0);
+    setPortamentoAllSeqs(0);
     clockTick = 0;
     for(int i = 0; i < MAX_SEQ; i++) {
         _sequences[i] = NULL;
@@ -19,7 +19,7 @@ Sequencer::Sequencer() {
 
 Sequencer::Sequencer(int bpm) {
     setbpm(bpm);
-    setPortamento(0);
+    setPortamentoAllSeqs(0);
     clockTick = 0;
     for(int i = 0; i < MAX_SEQ; i++) {
         _sequences[i] = NULL;
@@ -31,7 +31,7 @@ Sequencer::Sequencer(int bpm) {
 
 void Sequencer::init(int bpm) {
     setbpm(bpm);
-    setPortamento(0);
+    setPortamentoAllSeqs(0);
     clockTick = 0;
     for(int i = 0; i < MAX_SEQ; i++) {
         _sequences[i] = NULL;
@@ -53,7 +53,7 @@ void Sequencer::update()
         if(clockTick >= s -> step) {
             if(s -> _steps) {
                 //  Serial.println("_steps");
-                s -> triggerNoteOn(&noteOut, &gateOut); // NOTEON
+                s -> triggerNoteOn(&noteOut, &gateOut, &portamentoOut); // NOTEON
                 //  Serial.println("triggerNoteOn");
             } else {
                 s->_callback();
@@ -325,18 +325,6 @@ void Sequencer::setbpm(int bpm)
         _bpmInClockTicks = _bpm * TICKS_PER_QUARTER_NOTE;
         tickTime = 60 * 1000000 / _bpmInClockTicks;
     }
-}
-
-
-void Sequencer::setPortamento(int portamento)
-{
-    _portamento =  portamento;
-}
-
-
-int Sequencer::getPortamento()
-{
-    return _portamento;
 }
 
 
@@ -616,6 +604,21 @@ int Sequencer::setSelectedSequence(int s)
 }
 
 
+void Sequencer::setPortamentoAllSeqs(int portamento)
+{
+    int index = 0;
+    while(index < MAX_SEQ && _sequences[index] != NULL) {
+        _sequences[index]->setportamento(portamento);
+        index++;
+    }
+}
+
+
+void Sequencer::setPortamento(int index, int portamento) {
+    _sequences[index]->setportamento(portamento);
+}
+
+
 void Sequencer::setGatewidth(int index, int gw) {
     _sequences[index]->setgatewidth(gw);
 }
@@ -801,7 +804,7 @@ void seq::trigger(int *noteout_ptr, int *gateout_ptr) //, int *noteoffout_ptr, i
 }
 
 
-void seq::triggerNoteOn(int *noteout_ptr, int *gateout_ptr) //, int *noteoffout_ptr, int *noteonout_ptr)
+void seq::triggerNoteOn(int *noteout_ptr, int *gateout_ptr, int *portout_ptr) //, int *noteoffout_ptr, int *noteonout_ptr)
 {
 
     if(_begin < 0 ) _begin = 0;
@@ -826,7 +829,11 @@ void seq::triggerNoteOn(int *noteout_ptr, int *gateout_ptr) //, int *noteoffout_
         int slide = _slides[_position];
         if(note) {
             *noteout_ptr = note << 24;
-            if(!slide) *gateout_ptr = SIGNED_BIT_32_HIGH;
+            if(slide) *portout_ptr = _portamento;
+            else {
+                *gateout_ptr = SIGNED_BIT_32_HIGH;
+                *portout_ptr = 0;
+            }
         } else {
             *gateout_ptr = SIGNED_BIT_32_LOW;
         }
@@ -1025,6 +1032,14 @@ void seq::setsubdiv(SUBDIV v)
 SUBDIV seq::getsubdiv()
 {
     return _subdiv;
+}
+
+
+void seq::setportamento(int portamento)
+{
+    if(portamento < 0) portamento = 0;
+    if(portamento > 127) portamento = 127;
+    _portamento = portamento << 24;
 }
 
 

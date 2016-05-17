@@ -48,7 +48,6 @@ Amplifier amp;
 int cutoffModAmount = 0;
 int cutoff = 0;
 int _bpm;
-int portamento = 0;
 
 // The Interrupt Service Routine (ISR) for the synthesizer
 void synth_isr() {
@@ -63,7 +62,7 @@ void synth_isr() {
 
 void setup() {
 
-    // wipe_eeprom(); // DO NOT TURN THIS ON UNLESS YOU WANT TO WIPE ALL MEMORY
+    // interface.memory.wipe_eeprom(); // DO NOT TURN THIS ON UNLESS YOU WANT TO WIPE ALL MEMORY
     interface.attachSequencer(&seq);
     seq.init(120);
     seq.setInternalClock(true);
@@ -73,7 +72,7 @@ void setup() {
     // The order doesn't matter
     env1.gateIn_ptr = &seq.gateOut;
     env2.gateIn_ptr = &seq.gateOut;
-    saw.portamentoIn_ptr = &portamento;
+    saw.portamentoIn_ptr = &seq.portamentoOut;
     saw.frequencyIn_ptr = &seq.noteOut;
     fltr.audioIn_ptr = &saw.audioOut;
     fltr.cutoffIn_ptr = &cutoff;
@@ -88,11 +87,11 @@ void setup() {
     // a separate function for each mode.
 
     interface.pots.attachCallback(NO_BUTTONS, 0, &setCutoff);
-    // interface.pots.attachCallback(NO_BUTTONS, 1, &setCutoffModAmount);
-    interface.pots.attachCallback(NO_BUTTONS, 1, &setPortamento);
+    interface.pots.attachCallback(NO_BUTTONS, 1, &setCutoffModAmount);
     interface.pots.attachCallback(BUTTON_1, 0, &setEnv2Attack);
     interface.pots.attachCallback(BUTTON_1, 1, &setEnv2DecayRelease);
     interface.pots.attachCallback(BUTTON_1_3, 0, &setBPM);
+    interface.pots.attachCallback(BUTTON_1_3, 1, &setPortamento);
 
     // This function sets up MIDI and Sequencer objects,
     // prepares the DAC and initiate the synth ISR
@@ -117,7 +116,7 @@ void setCutoffModAmount(int value) {
 }
 
 void setPortamento(int value) {
-    portamento = value << 21;
+    seq.setPortamentoAllSeqs(value >> 3);
 }
 
 void setEnv2Attack(int value) {
