@@ -175,42 +175,6 @@ void Pots::update() {
             }
         }
     }
-    // switch(machineState) {
-    //     case 0:                 // NO BUTTONS
-    //     if(checkPot(0, machineState))
-    //     if(checkPot(1, machineState))
-    //     break;
-    //     case 1:                 // BUTTON 1
-    //     if(checkPot(0, machineState))
-    //     if(checkPot(1, machineState))
-    //     break;
-    //     case 2:                 // BUTTON 2
-    //     if(checkPot(0, machineState))
-    //     if(checkPot(1, machineState))
-    //     break;
-    //     case 3:                 // BUTTON 1 + 2
-    //     if(checkPot(0, machineState))
-    //     if(checkPot(1, machineState))
-    //     break;
-    //     case 4:                 // BUTTON 3
-    //     if(checkPot(0, machineState))
-    //     if(checkPot(1, machineState))
-    //     break;
-    //     case 5:                 // BUTTON 1 + 3
-    //     if(checkPot(0, machineState))
-    //     if(checkPot(1, machineState))
-    //     break;
-    //     case 6:                 // BUTTON 2 + 3
-    //     if(checkPot(0, machineState))
-    //     if(checkPot(1, machineState))
-    //     break;
-    //     case 7:                 // BUTTON 1 + 2 + 3
-    //     if(checkPot(0, machineState))
-    //     if(checkPot(1, machineState))
-    //     break;
-    //     default:
-    //     break;
-    // }
 }
 
 
@@ -576,8 +540,7 @@ void Bodyseq::setupSequences() {
             if(note == 255) {
                 noteValues[j] = 0;
                 // Serial.println("ENCOUNTERED -1");
-            }
-            else {
+            } else {
                 noteValues[j] = root_note + scale[notes[8 * i + j]] + octave[8 * i + j] * 12;
             }
             // noteValues[j] = rootNote + scale[notes[8 * i + j]] + octave[8 * i + j] * 12;

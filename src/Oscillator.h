@@ -36,18 +36,21 @@ public:
 	int* frequencyIn_ptr;
 	int* fmSourceIn_ptr;
 	int* fmAmountIn_ptr;
+	int* portamentoIn_ptr;
 
 protected:
 
 	int64_t		_expFrequency[256];
 	int64_t		_lfoFrequency[256];
+	int64_t		_portamentoLPCoefficient[128];
 
+	int _nosignal;
 
-	float 	_freq;
+	float 		_freq;
 	int 		_detune;
 	int			_semi;
+	int			_portamento;
 	int			_bend;
-	int 		_portamento;
 	int			_gain;
 
 	int 		_period;
@@ -55,7 +58,10 @@ protected:
 	int 		_accumulator;
 	int			_osc;
 
-//variables for direct audiorate calculation of frequency
+	// variables for portamento frequency change LP filter
+	int64_t _a0, _b1, _x0, _y0;
+
+	//variables for direct audiorate calculation of frequency
 	int64_t		_dir;
 	int64_t 	_indx;
 	int64_t 	_ifrac;
@@ -69,6 +75,7 @@ protected:
 	int _frequencyIn;
 	int _fmSourceIn;
 	int _fmAmountIn;
+	int _portamentoIn;
 	int _isPlaying;
 	// int _audioOut;
 

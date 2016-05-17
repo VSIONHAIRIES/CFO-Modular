@@ -8,6 +8,7 @@
 
 Sequencer::Sequencer() {
     setbpm(120);
+    setPortamento(0);
     clockTick = 0;
     for(int i = 0; i < MAX_SEQ; i++) {
         _sequences[i] = NULL;
@@ -18,6 +19,7 @@ Sequencer::Sequencer() {
 
 Sequencer::Sequencer(int bpm) {
     setbpm(bpm);
+    setPortamento(0);
     clockTick = 0;
     for(int i = 0; i < MAX_SEQ; i++) {
         _sequences[i] = NULL;
@@ -29,6 +31,7 @@ Sequencer::Sequencer(int bpm) {
 
 void Sequencer::init(int bpm) {
     setbpm(bpm);
+    setPortamento(0);
     clockTick = 0;
     for(int i = 0; i < MAX_SEQ; i++) {
         _sequences[i] = NULL;
@@ -325,6 +328,18 @@ void Sequencer::setbpm(int bpm)
 }
 
 
+void Sequencer::setPortamento(int portamento)
+{
+    _portamento =  portamento;
+}
+
+
+int Sequencer::getPortamento()
+{
+    return _portamento;
+}
+
+
 int Sequencer::getbpm()
 {
     return _bpm;
@@ -582,6 +597,16 @@ bool Sequencer::insertNotes(int index, int notes[], int numNotes, int newPositio
 }
 
 
+bool Sequencer::insertSlides(int index, int slides[], int numSlides, int newPosition)
+{
+    if(index >= 0 && index < MAX_SEQ && _sequences[index] != NULL) {
+        _sequences[index]->insertslides(slides, numSlides, newPosition);
+        return true;
+    }
+    return false;
+}
+
+
 int Sequencer::setSelectedSequence(int s)
 {
     if(s < 0) s = 0;
@@ -650,6 +675,7 @@ seq::seq(int id, SUBDIV subdiv,  int steps, int channel) : _id(id), _stopped(tru
     for(int i = 0; i < MAX_STEPS; i++) {
         _notes[i] = 36 + 3 * i;
         _velocity[i] = 127;
+        _slides[i] = 0;
     }
     setinternal(true);
     setexternal(true);
@@ -673,6 +699,7 @@ seq::seq(int id, SUBDIV subdiv,  int steps, SEQ_LOOP_TYPE loop) : _id(id), _stop
     for(int i = 0; i < MAX_STEPS; i++) {
         _notes[i] = 36 + 3 * i;
         _velocity[i] = 127;
+        _slides[i] = 0;
     }
     setinternal(true);
     setexternal(true);
@@ -700,6 +727,7 @@ seq::seq(int id, SUBDIV subdiv,  int steps, SEQ_LOOP_TYPE loop, bool reverse) : 
     for(int i = 0; i < MAX_STEPS; i++) {
         _notes[i] = 36 + 3 * i;
         _velocity[i] = 127;
+        _slides[i] = 0;
     }
     setinternal(true);
     setexternal(true);
@@ -795,9 +823,10 @@ void seq::triggerNoteOn(int *noteout_ptr, int *gateout_ptr) //, int *noteoffout_
 
     if(_internal) {
         int note = _notes[_position];
+        int slide = _slides[_position];
         if(note) {
             *noteout_ptr = note << 24;
-            *gateout_ptr = SIGNED_BIT_32_HIGH;
+            if(!slide) *gateout_ptr = SIGNED_BIT_32_HIGH;
         } else {
             *gateout_ptr = SIGNED_BIT_32_LOW;
         }
@@ -854,6 +883,20 @@ void seq::insertnotes(int notes[], int numNotes, int newPosition)
         else if(note < 0 ) note = 0;
         if((pos >= 0) && (pos < MAX_STEPS)) {
             _notes[pos] = note;
+        }
+    }
+}
+
+
+void seq::insertslides(int slides[], int numSlides, int newPosition)
+{
+    for(int i = 0; i < numSlides; i++) {
+        int pos = newPosition + i;
+        int slide = slides[i];
+        if(slide > 0) slide = 1;
+        else if(slide < 0 ) slide = 0;
+        if((pos >= 0) && (pos < MAX_STEPS)) {
+            _slides[pos] = slide;
         }
     }
 }

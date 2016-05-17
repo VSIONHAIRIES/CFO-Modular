@@ -89,6 +89,9 @@ class Sequencer : public AudioNode {
     void setbpm(int bpm);
     int getbpm();
 
+    void setPortamento(int portamento);
+    int getPortamento();
+
     bool setChannel(int index, int c);
     int getChannel(int index);
 
@@ -126,6 +129,7 @@ class Sequencer : public AudioNode {
     func_cb getCallback(int index);
 
     bool insertNotes(int index, int notes[], int numNotes, int newPosition);
+    bool insertSlides(int index, int slides[], int numSlides, int newPosition);
 
     int setSelectedSequence(int s);
     // int getSelectedSequence();
@@ -141,6 +145,7 @@ class Sequencer : public AudioNode {
 
     int noteOut;
     int gateOut;
+    int portamentoOut;
 
     int noteOffOut[4];
     int noteOnOut[4];
@@ -164,6 +169,8 @@ protected:
     unsigned long timeNow;
     unsigned long lastTime;
     unsigned long tickTime;
+
+    int _portamento;
 
     int selectedSequence;
     int selectedPosition;
@@ -214,6 +221,7 @@ class seq {
     int _velocity[MAX_STEPS];
     int _ccNumbers[MAX_STEPS];
     int _ccValues[MAX_STEPS];
+    int _slides[MAX_STEPS];
 
     unsigned long step;
 
@@ -262,6 +270,7 @@ class seq {
     func_cb _callback;
 
     void insertnotes(int notes[], int numNotes, int newPosition);
+    void insertslides(int slides[], int numSlides, int newPosition);
 };
 
 #endif // SEQUENCER_H

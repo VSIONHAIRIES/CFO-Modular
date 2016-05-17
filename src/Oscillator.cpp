@@ -1,6 +1,5 @@
-#include <Oscillator.h>
-
 #include <Arduino.h>
+#include "Oscillator.h"
 
 const float semiToneTable[] = {0.25,0.2648658,0.2806155,0.29730177,0.31498027,0.33370996,0.35355338,0.37457678,0.39685026,0.4204482,0.44544938,0.47193715,0.5,0.5297315,0.561231,0.59460354,0.62996054,0.6674199,0.70710677,0.74915355,0.7937005,0.8408964,0.8908987,0.9438743,1.0,1.0594631,1.122462,1.1892071,1.2599211,1.3348398,1.4142135,1.4983071,1.587401,1.6817929,1.7817974,1.8877486,2.0,2.1189263,2.244924,2.3784142,2.5198421,2.6696796,2.828427,2.9966142,3.174802,3.3635857,3.563595,3.7754972,4.0};
 
@@ -23,7 +22,22 @@ Oscillator::Oscillator() : AudioNode() {
 	_frequencyIn = 0;
 	_fmSourceIn = 0;
 	_fmAmountIn = 0;
+	_portamento = 0;
+
+	_nosignal = 0;
+	frequencyIn_ptr = &_nosignal;
+	fmSourceIn_ptr = &_nosignal;
+	fmAmountIn_ptr = &_nosignal;
+	portamentoIn_ptr = &_nosignal;
+
 	setFrequencyIn(57); // midinote for 220Hz
+
+	// Low Pass filter table for the portamento function	for (int i=0; i<128; i++) {
+	for (int i=0; i<128; i++) {
+		double fc = ( ( pow ( 2, ( ( double(i) - 120.0 - 69.0) / 24.0 ) ) ) * 440.0 ) / SAMPLE_RATE;
+		_portamentoLPCoefficient[127 - i] = int64_t ( BIT_32_FLOAT * ( exp ( M_PI * -2.0 * fc ) ) );
+	}
+
 
 	// this extends the standard midi frequencies from 128 to 256 discrete values,
 	// extending the frequency range with -117 positions below to 0.00949 Hz

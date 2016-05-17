@@ -48,6 +48,7 @@ Amplifier amp;
 int cutoffModAmount = 0;
 int cutoff = 0;
 int _bpm;
+int portamento = 0;
 
 // The Interrupt Service Routine (ISR) for the synthesizer
 void synth_isr() {
@@ -72,6 +73,7 @@ void setup() {
     // The order doesn't matter
     env1.gateIn_ptr = &seq.gateOut;
     env2.gateIn_ptr = &seq.gateOut;
+    saw.portamentoIn_ptr = &portamento;
     saw.frequencyIn_ptr = &seq.noteOut;
     fltr.audioIn_ptr = &saw.audioOut;
     fltr.cutoffIn_ptr = &cutoff;
@@ -86,7 +88,8 @@ void setup() {
     // a separate function for each mode.
 
     interface.pots.attachCallback(NO_BUTTONS, 0, &setCutoff);
-    interface.pots.attachCallback(NO_BUTTONS, 1, &setCutoffModAmount);
+    // interface.pots.attachCallback(NO_BUTTONS, 1, &setCutoffModAmount);
+    interface.pots.attachCallback(NO_BUTTONS, 1, &setPortamento);
     interface.pots.attachCallback(BUTTON_1, 0, &setEnv2Attack);
     interface.pots.attachCallback(BUTTON_1, 1, &setEnv2DecayRelease);
     interface.pots.attachCallback(BUTTON_1_3, 0, &setBPM);
@@ -111,6 +114,10 @@ void setCutoff(int value) {
 
 void setCutoffModAmount(int value) {
     cutoffModAmount = value << 21;
+}
+
+void setPortamento(int value) {
+    portamento = value << 21;
 }
 
 void setEnv2Attack(int value) {
