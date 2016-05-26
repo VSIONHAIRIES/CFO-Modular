@@ -831,8 +831,8 @@ void seq::triggerNoteOn(int *noteout_ptr, int *gateout_ptr, int *portout_ptr) //
             *noteout_ptr = note << 24;
             if(slide) *portout_ptr = _portamento;
             else {
-                *gateout_ptr = SIGNED_BIT_32_HIGH;
                 *portout_ptr = 0;
+                *gateout_ptr = SIGNED_BIT_32_HIGH;
             }
         } else {
             *gateout_ptr = SIGNED_BIT_32_LOW;
@@ -850,13 +850,27 @@ void seq::triggerNoteOn(int *noteout_ptr, int *gateout_ptr, int *portout_ptr) //
 
 void seq::triggerNoteOff(int *noteout_ptr, int *gateout_ptr) //, int *noteoffout_ptr, int *noteonout_ptr)
 {
-    if(_begin < 0 ) _begin = 0;
+    int next_position;
+    if(_reverse) {
+      next_position = _position - 1;
+      if(next_position < 0) next_position = _end;
+    } else {
+      next_position = _position + 1;
+      if(next_position > _end) next_position = _begin;
+    }
+    int slide = _slides[next_position];
+
+    // if(_begin < 0 ) _begin = 0;
 
     if(_internal) {
         // Serial.print("_position is: ");
         // Serial.println(_notes[_lastposition]);
-        *noteout_ptr = _notes[_lastposition] << 24;
-        *gateout_ptr = SIGNED_BIT_32_LOW;
+        if(!slide) {
+          *noteout_ptr = _notes[_lastposition] << 24;
+          *gateout_ptr = SIGNED_BIT_32_LOW;
+        }
+        // *noteout_ptr = _notes[_lastposition] << 24;
+        // *gateout_ptr = SIGNED_BIT_32_LOW;
     }
     if(_external) {
         // see seq::trigger(int*, int*) function for comments on what to put here
